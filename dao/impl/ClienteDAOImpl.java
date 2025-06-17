@@ -15,11 +15,13 @@ import com.pinguela.rentexpres.util.JDBCUtils;
 public class ClienteDAOImpl implements ClienteDAO {
 
 	private static final Logger logger = LogManager.getLogger(ClienteDAOImpl.class);
-	private static final String CLIENTE_SELECT_BASE = "SELECT c.id_cliente, c.nombre, c.apellido1, c.apellido2, c.telefono, c.email, "
-			+ "d.calle, d.numero, l.nombre_localidad, p.nombre_provincia " + "FROM cliente c "
-			+ "LEFT JOIN direccion d ON c.id_direccion = d.id_direccion "
-			+ "LEFT JOIN localidad l ON d.id_localidad = l.id_localidad "
-			+ "LEFT JOIN provincia p ON l.id_provincia = p.id_provincia";
+    private static final String CLIENTE_SELECT_BASE = "SELECT c.id_cliente, c.nombre, c.apellido1, c.apellido2, "
+                    + "c.fecha_nacimiento, c.telefono, c.email, c.id_direccion, "
+                    + "d.calle, d.numero, l.nombre_localidad, p.nombre_provincia "
+                    + "FROM cliente c "
+                    + "LEFT JOIN direccion d ON c.id_direccion = d.id_direccion "
+                    + "LEFT JOIN localidad l ON d.id_localidad = l.id_localidad "
+                    + "LEFT JOIN provincia p ON l.id_provincia = p.id_provincia";
 
 	@Override
 	public ClienteDTO findById(Connection connection, Integer id) throws DataException {
