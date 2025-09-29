@@ -2,6 +2,7 @@ package com.pinguela.rentexpres.service;
 
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Servicio encargado de gestionar el almacenamiento y eliminación de archivos
@@ -53,4 +54,15 @@ public interface FileService {
      * @return la ruta absoluta del archivo o {@code null} si los parámetros son inválidos
      */
     Path getFilePath(String fileName, String folder, Long entityId);
+
+    /**
+     * Obtiene una lista con las rutas relativas de todos los archivos
+     * almacenados para una entidad concreta dentro de una carpeta.
+     *
+     * @param folder   carpeta donde se buscan los archivos
+     * @param entityId identificador de la entidad asociada
+     * @return lista de rutas relativas de los archivos encontrados. Si no hay
+     *         archivos o se produce un error, se devuelve una lista vacía
+     */
+    List<String> listFiles(String folder, Long entityId);
 }

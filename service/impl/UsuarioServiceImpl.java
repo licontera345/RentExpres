@@ -1,5 +1,9 @@
 package com.pinguela.rentexpres.service.impl;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -14,6 +18,7 @@ import com.pinguela.rentexpres.exception.RentexpresException;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.model.UsuarioCriteria;
 import com.pinguela.rentexpres.model.UsuarioDTO;
+import com.pinguela.rentexpres.service.FileService;
 import com.pinguela.rentexpres.service.UsuarioService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -29,9 +34,11 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     /** Logger para mensajes de información y errores. */
     private static final Logger logger = LogManager.getLogger(UsuarioServiceImpl.class);
+    private static final String USER_IMAGE_FOLDER = "usuarios";
 
     /** DAO usado para acceder a datos de usuario. */
     private UsuarioDAO usuarioDAO;
+    private final FileService fileService;
 
     /**
      * Constructor por defecto. Crea una instancia de {@link UsuarioDAOImpl} como
@@ -39,6 +46,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      */
     public UsuarioServiceImpl() {
         this.usuarioDAO = new UsuarioDAOImpl();
+        this.fileService = new FileServiceImpl();
     }
 
     /**
@@ -154,11 +162,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 // Limpiar contraseña antes de devolver
                 usuario.setContrasena(null);
 
-                // Subir imágenes si existen
-                if (usuario.getImagenes() != null && !usuario.getImagenes().isEmpty()) {
-                    FileServiceImpl fileService = new FileServiceImpl();
-                    fileService.uploadImages(usuario.getImagenes(), usuario.getId(), usuario.getId());
-                }
+                storeUserImages(usuario, true);
             } else {
                 JDBCUtils.rollbackTransaction(connection);
                 logger.warn("No se pudo crear el Usuario.");
@@ -200,10 +204,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 logger.info("Usuario actualizado exitosamente. ID: {}", usuario.getId());
 
                 usuario.setContrasena(null);
-                if (usuario.getImagenes() != null && !usuario.getImagenes().isEmpty()) {
-                    FileServiceImpl fileService = new FileServiceImpl();
-                    fileService.uploadImages(usuario.getImagenes(), usuario.getId(), usuario.getId());
-                }
+                storeUserImages(usuario, true);
             } else {
                 JDBCUtils.rollbackTransaction(connection);
                 logger.warn("No se pudo actualizar el Usuario. ID: {}", usuario.getId());
@@ -244,6 +245,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             if (eliminado) {
                 JDBCUtils.commitTransaction(connection);
                 logger.info("Usuario eliminado exitosamente. ID: {}", id);
+                deleteUserImages(id);
             } else {
                 JDBCUtils.rollbackTransaction(connection);
                 logger.warn("No se pudo eliminar el Usuario. ID: {}", id);
@@ -339,5 +341,57 @@ public class UsuarioServiceImpl implements UsuarioService {
             JDBCUtils.close(connection);
         }
         return results;
+    }
+
+    /**
+     * Guarda las imágenes asociadas a un usuario en el sistema de archivos. Si se
+     * indica, elimina previamente las imágenes existentes del usuario.
+     *
+     * @param usuario          usuario al que pertenecen las imágenes
+     * @param replaceExisting  si es {@code true} elimina las imágenes existentes
+     *                         antes de guardar las nuevas
+     */
+    private void storeUserImages(UsuarioDTO usuario, boolean replaceExisting) {
+        if (usuario == null || usuario.getId() == null || usuario.getImagenes() == null
+                || usuario.getImagenes().isEmpty()) {
+            return;
+        }
+
+        Long userId = usuario.getId().longValue();
+        if (replaceExisting) {
+            deleteUserImages(usuario.getId());
+        }
+
+        for (File image : usuario.getImagenes()) {
+            if (image == null) {
+                continue;
+            }
+            try (InputStream inputStream = new FileInputStream(image)) {
+                String storedPath = fileService.saveFile(inputStream, image.getName(), USER_IMAGE_FOLDER, userId);
+                if (storedPath == null) {
+                    logger.warn("No se pudo guardar la imagen {} para el usuario {}", image.getName(), userId);
+                }
+            } catch (IOException e) {
+                logger.error("Error al guardar la imagen {} del usuario {}", image.getName(), userId, e);
+            }
+        }
+    }
+
+    /**
+     * Elimina todas las imágenes asociadas a un usuario concreto del sistema de
+     * archivos.
+     *
+     * @param userId identificador del usuario
+     */
+    private void deleteUserImages(Integer userId) {
+        if (userId == null) {
+            return;
+        }
+        List<String> existingImages = fileService.listFiles(USER_IMAGE_FOLDER, userId.longValue());
+        for (String imagePath : existingImages) {
+            if (!fileService.deleteFile(imagePath)) {
+                logger.warn("No se pudo eliminar la imagen {} del usuario {}", imagePath, userId);
+            }
+        }
     }
 }
