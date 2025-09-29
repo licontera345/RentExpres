@@ -6,11 +6,18 @@ import java.util.List;
 
 public interface FileService {
 
- List<String> getImagePaths(Integer idVehiculo);
+        String VEHICLE_DIRECTORY = "vehiculos";
+        String USER_DIRECTORY = "usuarios";
 
- boolean deleteImage(String imagePath);
+        List<String> getImagePaths(Integer entityId, String entityDirectory);
 
- String uploadImage(File imagen, Integer idVehiculo) throws IOException;
+        boolean deleteImage(String imagePath);
+
+        String uploadImage(File imagen, Integer entityId, String entityDirectory) throws IOException;
+
+        List<String> uploadImages(List<File> imagenes, Integer entityId, String entityDirectory) throws IOException;
+
+        boolean deleteAllImages(Integer entityId, String entityDirectory) throws IOException;
 
 }
  

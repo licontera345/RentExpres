@@ -1,5 +1,6 @@
 package com.pinguela.rentexpres.service.impl;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -14,6 +15,7 @@ import com.pinguela.rentexpres.exception.RentexpresException;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.model.UsuarioCriteria;
 import com.pinguela.rentexpres.model.UsuarioDTO;
+import com.pinguela.rentexpres.service.FileService;
 import com.pinguela.rentexpres.service.UsuarioService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -32,6 +34,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     /** DAO usado para acceder a datos de usuario. */
     private UsuarioDAO usuarioDAO;
+    private final FileService fileService;
 
     /**
      * Constructor por defecto. Crea una instancia de {@link UsuarioDAOImpl} como
@@ -39,6 +42,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      */
     public UsuarioServiceImpl() {
         this.usuarioDAO = new UsuarioDAOImpl();
+        this.fileService = new FileServiceImpl();
     }
 
     /**
@@ -156,8 +160,16 @@ public class UsuarioServiceImpl implements UsuarioService {
 
                 // Subir imágenes si existen
                 if (usuario.getImagenes() != null && !usuario.getImagenes().isEmpty()) {
-                    FileServiceImpl fileService = new FileServiceImpl();
-                    fileService.uploadImages(usuario.getImagenes(), usuario.getId(), usuario.getId());
+                    if (usuario.getId() == null) {
+                        logger.warn("No se pueden guardar imágenes porque el usuario creado no tiene ID asignado");
+                    } else {
+                        try {
+                            fileService.uploadImages(usuario.getImagenes(), usuario.getId(),
+                                    FileService.USER_DIRECTORY);
+                        } catch (IOException e) {
+                            logger.error("Error al guardar imágenes para el usuario ID: {}", usuario.getId(), e);
+                        }
+                    }
                 }
             } else {
                 JDBCUtils.rollbackTransaction(connection);
@@ -201,8 +213,16 @@ public class UsuarioServiceImpl implements UsuarioService {
 
                 usuario.setContrasena(null);
                 if (usuario.getImagenes() != null && !usuario.getImagenes().isEmpty()) {
-                    FileServiceImpl fileService = new FileServiceImpl();
-                    fileService.uploadImages(usuario.getImagenes(), usuario.getId(), usuario.getId());
+                    if (usuario.getId() == null) {
+                        logger.warn("No se pueden actualizar imágenes porque el usuario no tiene ID");
+                    } else {
+                        try {
+                            fileService.uploadImages(usuario.getImagenes(), usuario.getId(),
+                                    FileService.USER_DIRECTORY);
+                        } catch (IOException e) {
+                            logger.error("Error al actualizar imágenes para el usuario ID: {}", usuario.getId(), e);
+                        }
+                    }
                 }
             } else {
                 JDBCUtils.rollbackTransaction(connection);
@@ -244,6 +264,14 @@ public class UsuarioServiceImpl implements UsuarioService {
             if (eliminado) {
                 JDBCUtils.commitTransaction(connection);
                 logger.info("Usuario eliminado exitosamente. ID: {}", id);
+                try {
+                    boolean imagesDeleted = fileService.deleteAllImages(id, FileService.USER_DIRECTORY);
+                    if (!imagesDeleted) {
+                        logger.warn("No se eliminaron completamente las imágenes del usuario ID: {}", id);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error al eliminar imágenes del usuario ID: {}", id, e);
+                }
             } else {
                 JDBCUtils.rollbackTransaction(connection);
                 logger.warn("No se pudo eliminar el Usuario. ID: {}", id);
