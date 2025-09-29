@@ -1,9 +1,12 @@
 package com.pinguela.rentexpres.service.impl;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -22,9 +25,10 @@ import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class VehiculoServiceImpl implements VehiculoService {
 
-	private static final Logger logger = LogManager.getLogger(VehiculoServiceImpl.class);
-	private final VehiculoDAO vehiculoDAO;
-	private final FileService fileService;
+        private static final Logger logger = LogManager.getLogger(VehiculoServiceImpl.class);
+        private static final String VEHICLE_IMAGE_FOLDER = "vehiculos";
+        private final VehiculoDAO vehiculoDAO;
+        private final FileService fileService;
 
 	public VehiculoServiceImpl() {
 		this.vehiculoDAO = new VehiculoDAOImpl();
@@ -38,13 +42,13 @@ public class VehiculoServiceImpl implements VehiculoService {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
 
-			VehiculoDTO vehiculo = vehiculoDAO.findById(connection, id);
-			if (vehiculo != null) {
-				List<String> imagePaths = fileService.getImagePaths(id);
-				if (!imagePaths.isEmpty()) {
-					vehiculo.setImagenPath(imagePaths.get(0));
-				}
-			}
+                        VehiculoDTO vehiculo = vehiculoDAO.findById(connection, id);
+                        if (vehiculo != null && id != null) {
+                                List<String> imagePaths = fileService.listFiles(VEHICLE_IMAGE_FOLDER, id.longValue());
+                                if (!imagePaths.isEmpty()) {
+                                        vehiculo.setImagenPath(imagePaths.get(0));
+                                }
+                        }
 
 			JDBCUtils.commitTransaction(connection);
 			logger.info("Vehículo encontrado con ID: {}", id);
@@ -65,13 +69,16 @@ public class VehiculoServiceImpl implements VehiculoService {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
 
-			List<VehiculoDTO> vehiculos = vehiculoDAO.findAll(connection);
-			for (VehiculoDTO vehiculo : vehiculos) {
-				List<String> imagePaths = fileService.getImagePaths(vehiculo.getId());
-				if (!imagePaths.isEmpty()) {
-					vehiculo.setImagenPath(imagePaths.get(0));
-				}
-			}
+                        List<VehiculoDTO> vehiculos = vehiculoDAO.findAll(connection);
+                        for (VehiculoDTO vehiculo : vehiculos) {
+                                if (vehiculo.getId() != null) {
+                                        List<String> imagePaths = fileService.listFiles(VEHICLE_IMAGE_FOLDER,
+                                                        vehiculo.getId().longValue());
+                                        if (!imagePaths.isEmpty()) {
+                                                vehiculo.setImagenPath(imagePaths.get(0));
+                                        }
+                                }
+                        }
 
 			JDBCUtils.commitTransaction(connection);
 			return vehiculos;
@@ -99,26 +106,20 @@ public class VehiculoServiceImpl implements VehiculoService {
 			}
 
 			// 2. Manejar la imagen si existe
-			if (imagen != null) {
-				try {
-					String imagePath = fileService.uploadImage(imagen, vehiculo.getId());
-					if (imagePath != null) {
-						// 3. Actualizar el vehículo con el path de la imagen
-						vehiculo.setImagenPath(imagePath);
-						boolean actualizado = vehiculoDAO.update(connection, vehiculo);
-						if (!actualizado) {
-							JDBCUtils.rollbackTransaction(connection);
-							logger.warn("Vehículo creado pero no se pudo actualizar con la imagen");
-							return false;
-						}
-					}
-				} catch (IOException e) {
-					logger.error("Error al guardar la imagen del vehículo, pero se creó el vehículo", e);
-					// Continuamos sin hacer rollback porque el vehículo sí se creó
-				}
-			}
+                        if (imagen != null) {
+                                try (InputStream inputStream = new FileInputStream(imagen)) {
+                                        String imagePath = fileService.saveFile(inputStream, imagen.getName(),
+                                                        VEHICLE_IMAGE_FOLDER, vehiculo.getId().longValue());
+                                        if (imagePath != null) {
+                                                vehiculo.setImagenPath(imagePath);
+                                        }
+                                } catch (IOException e) {
+                                        logger.error("Error al guardar la imagen del vehículo, pero se creó el vehículo", e);
+                                        // Continuamos sin hacer rollback porque el vehículo sí se creó
+                                }
+                        }
 
-			JDBCUtils.commitTransaction(connection);
+                        JDBCUtils.commitTransaction(connection);
 			logger.info("Vehículo creado exitosamente con ID: {}", vehiculo.getId());
 			return true;
 		} catch (SQLException | DataException e) {
@@ -138,21 +139,19 @@ public class VehiculoServiceImpl implements VehiculoService {
 			JDBCUtils.beginTransaction(connection);
 
 			// 1. Manejar la imagen si se proporciona una nueva
-			if (nuevaImagen != null) {
-				try {
-					// Eliminar imagen anterior si existe
-					if (vehiculo.getImagenPath() != null) {
-						fileService.deleteImage(vehiculo.getImagenPath());
-					}
-
-					// Subir nueva imagen
-					String imagePath = fileService.uploadImage(nuevaImagen, vehiculo.getId());
-					vehiculo.setImagenPath(imagePath);
-				} catch (IOException e) {
-					logger.error("Error al actualizar la imagen del vehículo", e);
-					// Continuamos con la actualización sin la imagen
-				}
-			}
+                        if (nuevaImagen != null && vehiculo.getId() != null) {
+                                try (InputStream inputStream = new FileInputStream(nuevaImagen)) {
+                                        String imagePath = fileService.updateFile(inputStream, nuevaImagen.getName(),
+                                                        VEHICLE_IMAGE_FOLDER, vehiculo.getId().longValue(),
+                                                        vehiculo.getImagenPath());
+                                        if (imagePath != null) {
+                                                vehiculo.setImagenPath(imagePath);
+                                        }
+                                } catch (IOException e) {
+                                        logger.error("Error al actualizar la imagen del vehículo", e);
+                                        // Continuamos con la actualización sin la imagen
+                                }
+                        }
 
 			// 2. Actualizar el vehículo en la base de datos
 			boolean actualizado = vehiculoDAO.update(connection, vehiculo);
@@ -189,10 +188,14 @@ public class VehiculoServiceImpl implements VehiculoService {
 				return false;
 			}
 
-			// 2. Eliminar las imágenes asociadas si existen
-			if (vehiculo.getImagenPath() != null) {
-				fileService.deleteImage(vehiculo.getImagenPath());
-			}
+                        // 2. Eliminar las imágenes asociadas si existen
+                        if (vehiculo.getId() != null) {
+                                List<String> imagePaths = fileService.listFiles(VEHICLE_IMAGE_FOLDER,
+                                                vehiculo.getId().longValue());
+                                for (String imagePath : imagePaths) {
+                                        fileService.deleteFile(imagePath);
+                                }
+                        }
 
 			// 3. Eliminar el vehículo de la base de datos
 			boolean eliminado = vehiculoDAO.delete(connection, id);
@@ -237,12 +240,15 @@ public class VehiculoServiceImpl implements VehiculoService {
 
 			// Para cada vehículo, obtener su imagen principal
 			if (results != null && results.getResults() != null) {
-				for (VehiculoDTO vehiculo : results.getResults()) {
-					List<String> imagePaths = fileService.getImagePaths(vehiculo.getId());
-					if (!imagePaths.isEmpty()) {
-						vehiculo.setImagenPath(imagePaths.get(0));
-					}
-				}
+                                for (VehiculoDTO vehiculo : results.getResults()) {
+                                        if (vehiculo.getId() != null) {
+                                                List<String> imagePaths = fileService.listFiles(VEHICLE_IMAGE_FOLDER,
+                                                                vehiculo.getId().longValue());
+                                                if (!imagePaths.isEmpty()) {
+                                                        vehiculo.setImagenPath(imagePaths.get(0));
+                                                }
+                                        }
+                                }
 			}
 
 			JDBCUtils.commitTransaction(connection);
@@ -261,53 +267,54 @@ public class VehiculoServiceImpl implements VehiculoService {
 	@Override
 	public List<String> getVehicleImages(Integer idVehiculo) throws RentexpresException {
 		try {
-			return fileService.getImagePaths(idVehiculo);
-		} catch (Exception e) {
-			logger.error("Error al obtener imágenes del vehículo ID: {}", idVehiculo, e);
-			throw new RentexpresException("Error al obtener imágenes del vehículo", e);
-		}
-	}
+                        if (idVehiculo == null) {
+                                return Collections.emptyList();
+                        }
+                        return fileService.listFiles(VEHICLE_IMAGE_FOLDER, idVehiculo.longValue());
+                } catch (Exception e) {
+                        logger.error("Error al obtener imágenes del vehículo ID: {}", idVehiculo, e);
+                        throw new RentexpresException("Error al obtener imágenes del vehículo", e);
+                }
+        }
 
-	@Override
-	public boolean updateVehicleImage(Integer idVehiculo, File nuevaImagen) throws RentexpresException {
-		Connection connection = null;
-		try {
-			connection = JDBCUtils.getConnection();
-			JDBCUtils.beginTransaction(connection);
+        @Override
+        public boolean updateVehicleImage(Integer idVehiculo, File nuevaImagen) throws RentexpresException {
+                Connection connection = null;
+                try {
+                        connection = JDBCUtils.getConnection();
+                        JDBCUtils.beginTransaction(connection);
 
-			// 1. Obtener el vehículo actual
-			VehiculoDTO vehiculo = vehiculoDAO.findById(connection, idVehiculo);
-			if (vehiculo == null) {
-				JDBCUtils.rollbackTransaction(connection);
-				logger.warn("No se encontró el vehículo con ID: {} para actualizar imagen", idVehiculo);
-				return false;
-			}
+                        // 1. Obtener el vehículo actual
+                        VehiculoDTO vehiculo = vehiculoDAO.findById(connection, idVehiculo);
+                        if (vehiculo == null) {
+                                JDBCUtils.rollbackTransaction(connection);
+                                logger.warn("No se encontró el vehículo con ID: {} para actualizar imagen", idVehiculo);
+                                return false;
+                        }
 
-			// 2. Manejar la nueva imagen
-			if (nuevaImagen != null) {
-				try {
-					// Eliminar imagen anterior si existe
-					if (vehiculo.getImagenPath() != null) {
-						fileService.deleteImage(vehiculo.getImagenPath());
-					}
+                        // 2. Manejar la nueva imagen
+                        if (nuevaImagen != null && idVehiculo != null) {
+                                try (InputStream inputStream = new FileInputStream(nuevaImagen)) {
+                                        String imagePath = fileService.updateFile(inputStream, nuevaImagen.getName(),
+                                                        VEHICLE_IMAGE_FOLDER, idVehiculo.longValue(),
+                                                        vehiculo.getImagenPath());
+                                        if (imagePath != null) {
+                                                vehiculo.setImagenPath(imagePath);
+                                        }
 
-					// Subir nueva imagen
-					String imagePath = fileService.uploadImage(nuevaImagen, idVehiculo);
-					vehiculo.setImagenPath(imagePath);
-
-					// Actualizar el vehículo con el nuevo path
-					boolean actualizado = vehiculoDAO.update(connection, vehiculo);
-					if (!actualizado) {
-						JDBCUtils.rollbackTransaction(connection);
-						logger.warn("No se pudo actualizar la imagen del vehículo ID: {}", idVehiculo);
-						return false;
-					}
-				} catch (IOException e) {
-					JDBCUtils.rollbackTransaction(connection);
-					logger.error("Error al actualizar la imagen del vehículo ID: {}", idVehiculo, e);
-					throw new RentexpresException("Error al actualizar la imagen del vehículo", e);
-				}
-			}
+                                        // Actualizar el vehículo con el nuevo path
+                                        boolean actualizado = vehiculoDAO.update(connection, vehiculo);
+                                        if (!actualizado) {
+                                                JDBCUtils.rollbackTransaction(connection);
+                                                logger.warn("No se pudo actualizar la imagen del vehículo ID: {}", idVehiculo);
+                                                return false;
+                                        }
+                                } catch (IOException e) {
+                                        JDBCUtils.rollbackTransaction(connection);
+                                        logger.error("Error al actualizar la imagen del vehículo ID: {}", idVehiculo, e);
+                                        throw new RentexpresException("Error al actualizar la imagen del vehículo", e);
+                                }
+                        }
 
 			JDBCUtils.commitTransaction(connection);
 			logger.info("Imagen del vehículo actualizada exitosamente. ID: {}", idVehiculo);

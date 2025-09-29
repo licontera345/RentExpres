@@ -6,8 +6,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -134,6 +138,33 @@ public class FileServiceImpl implements FileService {
 
         Path directory = resolveFolder(folder, entityId);
         return directory.resolve(fileName).normalize();
+    }
+
+    @Override
+    public List<String> listFiles(String folder, Long entityId) {
+        if (folder == null || folder.isBlank()) {
+            LOGGER.warn("La carpeta para listar archivos es inválida");
+            return Collections.emptyList();
+        }
+        if (entityId == null) {
+            LOGGER.warn("El identificador de la entidad es nulo");
+            return Collections.emptyList();
+        }
+
+        Path directory = resolveFolder(folder, entityId);
+        if (!Files.exists(directory) || !Files.isDirectory(directory)) {
+            LOGGER.info("No existen archivos en {}", directory);
+            return Collections.emptyList();
+        }
+
+        try (Stream<Path> stream = Files.list(directory)) {
+            return stream.filter(Files::isRegularFile)
+                    .map(path -> UPLOAD_DIR.relativize(path).toString().replace('\\', '/'))
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            LOGGER.error("Error al listar archivos en {}", directory, e);
+            return Collections.emptyList();
+        }
     }
 
     private Path resolveFolder(String folder, Long entityId) {
