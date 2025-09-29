@@ -27,8 +27,8 @@ public class VehiculoServiceImpl implements VehiculoService {
 	private final FileService fileService;
 
 	public VehiculoServiceImpl() {
-		this.vehiculoDAO = new VehiculoDAOImpl();
-		this.fileService = new FileServiceImpl();
+                this.vehiculoDAO = new VehiculoDAOImpl();
+                this.fileService = new FileServiceImpl();
 	}
 
 	@Override
@@ -40,7 +40,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 
 			VehiculoDTO vehiculo = vehiculoDAO.findById(connection, id);
 			if (vehiculo != null) {
-				List<String> imagePaths = fileService.getImagePaths(id);
+                                List<String> imagePaths = fileService.getImagePaths(id, FileService.VEHICLE_DIRECTORY);
 				if (!imagePaths.isEmpty()) {
 					vehiculo.setImagenPath(imagePaths.get(0));
 				}
@@ -67,7 +67,8 @@ public class VehiculoServiceImpl implements VehiculoService {
 
 			List<VehiculoDTO> vehiculos = vehiculoDAO.findAll(connection);
 			for (VehiculoDTO vehiculo : vehiculos) {
-				List<String> imagePaths = fileService.getImagePaths(vehiculo.getId());
+                                List<String> imagePaths = fileService.getImagePaths(vehiculo.getId(),
+                                                FileService.VEHICLE_DIRECTORY);
 				if (!imagePaths.isEmpty()) {
 					vehiculo.setImagenPath(imagePaths.get(0));
 				}
@@ -101,7 +102,8 @@ public class VehiculoServiceImpl implements VehiculoService {
 			// 2. Manejar la imagen si existe
 			if (imagen != null) {
 				try {
-					String imagePath = fileService.uploadImage(imagen, vehiculo.getId());
+                                        String imagePath = fileService.uploadImage(imagen, vehiculo.getId(),
+                                                        FileService.VEHICLE_DIRECTORY);
 					if (imagePath != null) {
 						// 3. Actualizar el vehículo con el path de la imagen
 						vehiculo.setImagenPath(imagePath);
@@ -142,11 +144,12 @@ public class VehiculoServiceImpl implements VehiculoService {
 				try {
 					// Eliminar imagen anterior si existe
 					if (vehiculo.getImagenPath() != null) {
-						fileService.deleteImage(vehiculo.getImagenPath());
+                                                fileService.deleteImage(vehiculo.getImagenPath());
 					}
 
 					// Subir nueva imagen
-					String imagePath = fileService.uploadImage(nuevaImagen, vehiculo.getId());
+                                        String imagePath = fileService.uploadImage(nuevaImagen, vehiculo.getId(),
+                                                        FileService.VEHICLE_DIRECTORY);
 					vehiculo.setImagenPath(imagePath);
 				} catch (IOException e) {
 					logger.error("Error al actualizar la imagen del vehículo", e);
@@ -190,9 +193,18 @@ public class VehiculoServiceImpl implements VehiculoService {
 			}
 
 			// 2. Eliminar las imágenes asociadas si existen
-			if (vehiculo.getImagenPath() != null) {
-				fileService.deleteImage(vehiculo.getImagenPath());
-			}
+                        if (vehiculo.getImagenPath() != null) {
+                                fileService.deleteImage(vehiculo.getImagenPath());
+                        }
+
+                        try {
+                                boolean imagesDeleted = fileService.deleteAllImages(id, FileService.VEHICLE_DIRECTORY);
+                                if (!imagesDeleted) {
+                                        logger.warn("No se eliminaron completamente las imágenes del vehículo ID: {}", id);
+                                }
+                        } catch (IOException e) {
+                                logger.warn("No se pudieron eliminar todas las imágenes del vehículo ID: {}", id, e);
+                        }
 
 			// 3. Eliminar el vehículo de la base de datos
 			boolean eliminado = vehiculoDAO.delete(connection, id);
@@ -237,8 +249,9 @@ public class VehiculoServiceImpl implements VehiculoService {
 
 			// Para cada vehículo, obtener su imagen principal
 			if (results != null && results.getResults() != null) {
-				for (VehiculoDTO vehiculo : results.getResults()) {
-					List<String> imagePaths = fileService.getImagePaths(vehiculo.getId());
+                                for (VehiculoDTO vehiculo : results.getResults()) {
+                                        List<String> imagePaths = fileService.getImagePaths(vehiculo.getId(),
+                                                        FileService.VEHICLE_DIRECTORY);
 					if (!imagePaths.isEmpty()) {
 						vehiculo.setImagenPath(imagePaths.get(0));
 					}
@@ -261,7 +274,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 	@Override
 	public List<String> getVehicleImages(Integer idVehiculo) throws RentexpresException {
 		try {
-			return fileService.getImagePaths(idVehiculo);
+                        return fileService.getImagePaths(idVehiculo, FileService.VEHICLE_DIRECTORY);
 		} catch (Exception e) {
 			logger.error("Error al obtener imágenes del vehículo ID: {}", idVehiculo, e);
 			throw new RentexpresException("Error al obtener imágenes del vehículo", e);
@@ -288,11 +301,12 @@ public class VehiculoServiceImpl implements VehiculoService {
 				try {
 					// Eliminar imagen anterior si existe
 					if (vehiculo.getImagenPath() != null) {
-						fileService.deleteImage(vehiculo.getImagenPath());
+                                                fileService.deleteImage(vehiculo.getImagenPath());
 					}
 
 					// Subir nueva imagen
-					String imagePath = fileService.uploadImage(nuevaImagen, idVehiculo);
+                                        String imagePath = fileService.uploadImage(nuevaImagen, idVehiculo,
+                                                        FileService.VEHICLE_DIRECTORY);
 					vehiculo.setImagenPath(imagePath);
 
 					// Actualizar el vehículo con el nuevo path
