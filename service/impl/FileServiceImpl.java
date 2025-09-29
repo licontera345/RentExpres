@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.pinguela.rentexpres.config.ConfigManager;
 import com.pinguela.rentexpres.service.FileService;
 
 /**
@@ -25,7 +26,7 @@ import com.pinguela.rentexpres.service.FileService;
 public class FileServiceImpl implements FileService {
 
     private static final Logger LOGGER = LogManager.getLogger(FileServiceImpl.class);
-    private static final Path UPLOAD_DIR = Paths.get(System.getProperty("user.dir"), "uploads");
+    private static final Path UPLOAD_DIR = initializeUploadDir();
     private static final long MAX_FILE_SIZE = 2L * 1024L * 1024L; // 2 MB
     private static final String[] ALLOWED_EXTENSIONS = { "jpg", "jpeg", "png" };
 
@@ -218,5 +219,28 @@ public class FileServiceImpl implements FileService {
             buffer.write(data, 0, bytesRead);
         }
         return buffer.toByteArray();
+    }
+
+    private static Path initializeUploadDir() {
+        String configuredPath = ConfigManager.getValue("base.image.path");
+        Path basePath;
+        if (configuredPath == null || configuredPath.isBlank()) {
+            basePath = Paths.get(System.getProperty("user.dir"), "resources", "uploads");
+        } else {
+            Path configured = Paths.get(configuredPath);
+            if (configured.isAbsolute()) {
+                basePath = configured;
+            } else {
+                basePath = Paths.get(System.getProperty("user.dir"), configuredPath);
+            }
+        }
+
+        try {
+            Files.createDirectories(basePath);
+        } catch (IOException e) {
+            LOGGER.error("No se pudo crear el directorio base de subidas: {}", basePath, e);
+        }
+
+        return basePath.toAbsolutePath().normalize();
     }
 }
