@@ -1,115 +1,191 @@
 package com.pinguela.rentexpres.service.impl;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Locale;
+import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.pinguela.rentexpres.config.ConfigManager;
 import com.pinguela.rentexpres.service.FileService;
 
+/**
+ * Implementación del servicio de gestión de archivos que permite almacenar,
+ * actualizar y eliminar imágenes en el sistema de ficheros.
+ */
 public class FileServiceImpl implements FileService {
 
-	private static final Logger logger = LogManager.getLogger(FileServiceImpl.class);
-	private static final String BASE_IMAGE_PATH = ConfigManager.getStringValue("base.image.path");
+    private static final Logger LOGGER = LogManager.getLogger(FileServiceImpl.class);
+    private static final Path UPLOAD_DIR = Paths.get(System.getProperty("user.dir"), "uploads");
+    private static final long MAX_FILE_SIZE = 2L * 1024L * 1024L; // 2 MB
+    private static final String[] ALLOWED_EXTENSIONS = { "jpg", "jpeg", "png" };
 
-	@Override
-	public String uploadImage(File imagen, Integer idVehiculo) throws IOException {
-		if (imagen == null || !imagen.exists()) {
-			logger.warn("El archivo de imagen es nulo o no existe");
-			return null;
-		}
+    @Override
+    public String saveFile(InputStream fileStream, String fileName, String folder, Long entityId) {
+        if (fileStream == null) {
+            LOGGER.warn("El flujo de entrada del archivo es nulo");
+            return null;
+        }
+        if (fileName == null || fileName.isBlank()) {
+            LOGGER.warn("El nombre del archivo es inválido");
+            return null;
+        }
+        if (folder == null || folder.isBlank()) {
+            LOGGER.warn("La carpeta de destino es inválida");
+            return null;
+        }
+        if (entityId == null) {
+            LOGGER.warn("El identificador de la entidad es nulo");
+            return null;
+        }
 
-		String carpetaImagenes = BASE_IMAGE_PATH + File.separator + "vehiculos" + File.separator + idVehiculo;
-		Path directorioDestino = Paths.get(carpetaImagenes);
+        String extension = getFileExtension(fileName);
+        if (!isExtensionAllowed(extension)) {
+            LOGGER.warn("Extensión de archivo no permitida: {}", extension);
+            return null;
+        }
 
-		if (!Files.exists(directorioDestino)) {
-			Files.createDirectories(directorioDestino);
-		}
+        Path targetDirectory = resolveFolder(folder, entityId);
+        try {
+            Files.createDirectories(targetDirectory);
+        } catch (IOException e) {
+            LOGGER.error("No se pudieron crear las carpetas de destino", e);
+            return null;
+        }
 
-		String nombreArchivo = imagen.getName();
-		if (!validarNombreArchivo(nombreArchivo)) {
-			logger.warn("El archivo no cumple con el formato requerido: {}", nombreArchivo);
-			return null;
-		}
+        byte[] fileBytes;
+        try {
+            fileBytes = readBytesWithLimit(fileStream);
+            if (fileBytes == null) {
+                LOGGER.warn("El archivo supera el tamaño máximo permitido de {} bytes", MAX_FILE_SIZE);
+                return null;
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error al leer el archivo", e);
+            return null;
+        }
 
-		String nombreUnico = generarNombreUnico(nombreArchivo);
-		Path destino = directorioDestino.resolve(nombreUnico);
-		Files.copy(imagen.toPath(), destino);
+        String uniqueFileName = buildUniqueFileName(entityId, extension);
+        Path destination = targetDirectory.resolve(uniqueFileName);
+        try {
+            Files.write(destination, fileBytes);
+            LOGGER.info("Archivo guardado en {}", destination);
+            return UPLOAD_DIR.relativize(destination).toString().replace('\\', '/');
+        } catch (IOException e) {
+            LOGGER.error("Error al guardar el archivo", e);
+            return null;
+        }
+    }
 
-		String relativePath = "vehiculos" + File.separator + idVehiculo + File.separator + nombreUnico;
-		logger.info("Imagen guardada en: {}", destino.toString());
+    @Override
+    public boolean deleteFile(String filePath) {
+        if (filePath == null || filePath.isBlank()) {
+            LOGGER.warn("La ruta del archivo a eliminar es inválida");
+            return false;
+        }
 
-		return relativePath;
-	}
+        Path pathToDelete = resolvePath(filePath);
+        try {
+            if (!Files.exists(pathToDelete)) {
+                LOGGER.warn("El archivo no existe: {}", pathToDelete);
+                return false;
+            }
+            Files.delete(pathToDelete);
+            LOGGER.info("Archivo eliminado: {}", pathToDelete);
+            return true;
+        } catch (IOException e) {
+            LOGGER.error("No se pudo eliminar el archivo: {}", pathToDelete, e);
+            return false;
+        }
+    }
 
-	@Override
-	public List<String> getImagePaths(Integer idVehiculo) {
-		String carpetaImagenes = BASE_IMAGE_PATH + File.separator + "vehiculos" + File.separator + idVehiculo;
-		File directorioImagenes = new File(carpetaImagenes);
-		List<String> imagePaths = new ArrayList<>();
+    @Override
+    public String updateFile(InputStream fileStream, String fileName, String folder, Long entityId, String oldFilePath) {
+        String newFilePath = saveFile(fileStream, fileName, folder, entityId);
+        if (newFilePath == null) {
+            LOGGER.warn("No se pudo guardar el nuevo archivo, se mantiene el anterior");
+            return null;
+        }
 
-		if (directorioImagenes.exists() && directorioImagenes.isDirectory()) {
-			File[] archivos = directorioImagenes.listFiles();
-			if (archivos != null) {
-				for (File archivo : archivos) {
-					if (archivo.isFile()) {
-						String nombre = archivo.getName().toLowerCase();
-						if (nombre.endsWith(".jpg") || nombre.endsWith(".png") || nombre.endsWith(".jpeg")) {
-							String relativePath = "vehiculos" + File.separator + idVehiculo + File.separator
-									+ archivo.getName();
-							imagePaths.add(relativePath);
-						}
-					}
-				}
-			}
-		} else {
-			logger.info("No se encontraron imágenes para el vehículo ID: {}", idVehiculo);
-		}
+        if (oldFilePath != null && !oldFilePath.isBlank()) {
+            if (!deleteFile(oldFilePath)) {
+                LOGGER.warn("No se pudo eliminar el archivo anterior: {}", oldFilePath);
+            }
+        }
 
-		return imagePaths;
-	}
+        return newFilePath;
+    }
 
-	@Override
-	public boolean deleteImage(String imagePath) {
-		if (imagePath == null || imagePath.isEmpty()) {
-			return false;
-		}
+    @Override
+    public Path getFilePath(String fileName, String folder, Long entityId) {
+        if (fileName == null || fileName.isBlank()) {
+            LOGGER.warn("El nombre del archivo es inválido");
+            return null;
+        }
+        if (folder == null || folder.isBlank()) {
+            LOGGER.warn("La carpeta es inválida");
+            return null;
+        }
 
-		File imageFile = new File(BASE_IMAGE_PATH + File.separator + imagePath);
-		if (!imageFile.exists()) {
-			return false;
-		}
+        Path directory = resolveFolder(folder, entityId);
+        return directory.resolve(fileName).normalize();
+    }
 
-		return imageFile.delete();
-	}
+    private Path resolveFolder(String folder, Long entityId) {
+        Path folderPath = UPLOAD_DIR.resolve(folder).normalize();
+        if (entityId != null) {
+            folderPath = folderPath.resolve(String.valueOf(entityId)).normalize();
+        }
+        return folderPath;
+    }
 
-	private boolean validarNombreArchivo(String nombreArchivo) {
-		String regex = "^[a-zA-Z][a-zA-Z0-9_-]*\\.(jpg|png|jpeg)$";
-		Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-		Matcher matcher = pattern.matcher(nombreArchivo);
-		return matcher.matches();
-	}
+    private Path resolvePath(String filePath) {
+        Path path = Paths.get(filePath);
+        if (!path.isAbsolute()) {
+            path = UPLOAD_DIR.resolve(path).normalize();
+        }
+        return path;
+    }
 
-	private String generarNombreUnico(String nombreArchivo) {
-		String timestamp = String.valueOf(System.currentTimeMillis());
-		int dotIndex = nombreArchivo.lastIndexOf('.');
-		if (dotIndex > 0) {
-			return nombreArchivo.substring(0, dotIndex) + "_" + timestamp + nombreArchivo.substring(dotIndex);
-		}
-		return nombreArchivo + "_" + timestamp;
-	}
+    private String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex >= 0 && dotIndex < fileName.length() - 1) {
+            return fileName.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
+        }
+        return "";
+    }
 
-	public void uploadImages(List<File> imagenes, Integer id, Integer id2) {
-		// TODO Auto-generated method stub
-		
-	}
+    private boolean isExtensionAllowed(String extension) {
+        for (String allowed : ALLOWED_EXTENSIONS) {
+            if (allowed.equalsIgnoreCase(extension)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String buildUniqueFileName(Long entityId, String extension) {
+        String uuid = UUID.randomUUID().toString();
+        return entityId + "_" + uuid + (extension.isEmpty() ? "" : "." + extension);
+    }
+
+    private byte[] readBytesWithLimit(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] data = new byte[8192];
+        int bytesRead;
+        long totalRead = 0;
+        while ((bytesRead = inputStream.read(data)) != -1) {
+            totalRead += bytesRead;
+            if (totalRead > MAX_FILE_SIZE) {
+                return null;
+            }
+            buffer.write(data, 0, bytesRead);
+        }
+        return buffer.toByteArray();
+    }
 }
