@@ -3,22 +3,22 @@ package com.pinguela.rentexpres.service;
 import java.util.List;
 
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.ReservaCriteria;
-import com.pinguela.rentexpres.model.ReservaDTO;
+import com.pinguela.rentexpres.model.ReservationCriteria;
+import com.pinguela.rentexpres.model.ReservationDTO;
 import com.pinguela.rentexpres.model.Results;
 
 public interface ReservaService {
 
-	public ReservaDTO findById(Integer id) throws RentexpresException;
+	public ReservationDTO findById(Integer id) throws RentexpresException;
 
-	public List<ReservaDTO> findAll() throws RentexpresException;
+	public List<ReservationDTO> findAll() throws RentexpresException;
 
-	public boolean create(ReservaDTO reserva) throws RentexpresException;
+	public boolean create(ReservationDTO reserva) throws RentexpresException;
 
-	public boolean update(ReservaDTO reserva) throws RentexpresException;
+	public boolean update(ReservationDTO reserva) throws RentexpresException;
 
 	public boolean delete(Integer id) throws RentexpresException;
 
-	public Results<ReservaDTO> findByCriteria(ReservaCriteria criteria) throws RentexpresException;
+	public Results<ReservationDTO> findByCriteria(ReservationCriteria criteria) throws RentexpresException;
 
 }

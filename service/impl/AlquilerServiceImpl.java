@@ -9,8 +9,8 @@ import com.pinguela.rentexpres.dao.AlquilerDAO;
 import com.pinguela.rentexpres.dao.impl.AlquilerDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.AlquilerCriteria;
-import com.pinguela.rentexpres.model.AlquilerDTO;
+import com.pinguela.rentexpres.model.RentalCriteria;
+import com.pinguela.rentexpres.model.RentalDTO;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.service.AlquilerService;
 import com.pinguela.rentexpres.util.JDBCUtils;
@@ -26,8 +26,8 @@ public class AlquilerServiceImpl implements AlquilerService {
 	}
 
 	@Override
-	public AlquilerDTO findById(Integer id) throws RentexpresException {
-		AlquilerDTO alquiler = null;
+	public RentalDTO findById(Integer id) throws RentexpresException {
+		RentalDTO alquiler = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
@@ -45,8 +45,8 @@ public class AlquilerServiceImpl implements AlquilerService {
 	}
 
 	@Override
-	public List<AlquilerDTO> findAll() throws RentexpresException {
-		List<AlquilerDTO> lista = null;
+	public List<RentalDTO> findAll() throws RentexpresException {
+		List<RentalDTO> lista = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
@@ -64,7 +64,7 @@ public class AlquilerServiceImpl implements AlquilerService {
 	}
 
 	@Override
-	public boolean create(AlquilerDTO alquiler) throws RentexpresException {
+	public boolean create(RentalDTO alquiler) throws RentexpresException {
 		boolean creado = false;
 		try {
 			connection = JDBCUtils.getConnection();
@@ -88,7 +88,7 @@ public class AlquilerServiceImpl implements AlquilerService {
 	}
 
 	@Override
-	public boolean update(AlquilerDTO alquiler) throws RentexpresException {
+	public boolean update(RentalDTO alquiler) throws RentexpresException {
 		boolean actualizado = false;
 		try {
 			connection = JDBCUtils.getConnection();
@@ -136,8 +136,8 @@ public class AlquilerServiceImpl implements AlquilerService {
 	}
 
 	@Override
-	public Results<AlquilerDTO> findByCriteria(AlquilerCriteria criteria) throws RentexpresException {
-		Results<AlquilerDTO> results = null;
+	public Results<RentalDTO> findByCriteria(RentalCriteria criteria) throws RentexpresException {
+		Results<RentalDTO> results = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);

@@ -11,7 +11,7 @@ import com.pinguela.rentexpres.dao.LocalidadDAO;
 import com.pinguela.rentexpres.dao.impl.LocalidadDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.LocalidadDTO;
+import com.pinguela.rentexpres.model.CityDTO;
 import com.pinguela.rentexpres.service.LocalidadService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -28,10 +28,10 @@ public class LocalidadServiceImpl implements LocalidadService {
 
 	/* --------------------------------------------------------- */
 	@Override
-	public LocalidadDTO findById(Integer id) throws RentexpresException {
+	public CityDTO findById(Integer id) throws RentexpresException {
 		try (Connection c = JDBCUtils.getConnection()) {
 			JDBCUtils.beginTransaction(c);
-			LocalidadDTO dto = localidadDAO.findById(c, id);
+			CityDTO dto = localidadDAO.findById(c, id);
 			JDBCUtils.commitTransaction(c);
 			logger.info("findById Localidad OK (id={})", id);
 			return dto;
@@ -42,10 +42,10 @@ public class LocalidadServiceImpl implements LocalidadService {
 	}
 
 	@Override
-	public List<LocalidadDTO> findAll() throws RentexpresException {
+	public List<CityDTO> findAll() throws RentexpresException {
 		try (Connection c = JDBCUtils.getConnection()) {
 			JDBCUtils.beginTransaction(c);
-			List<LocalidadDTO> list = localidadDAO.findAll(c);
+			List<CityDTO> list = localidadDAO.findAll(c);
 			JDBCUtils.commitTransaction(c);
 			logger.info("findAll Localidad OK ({} filas)", list.size());
 			return list;
@@ -57,10 +57,10 @@ public class LocalidadServiceImpl implements LocalidadService {
 
 	/* -------- NUEVO -------- */
 	@Override
-	public List<LocalidadDTO> findByProvinciaId(Integer idProvincia) throws RentexpresException {
+	public List<CityDTO> findByProvinciaId(Integer idProvincia) throws RentexpresException {
 		try (Connection c = JDBCUtils.getConnection()) {
 			JDBCUtils.beginTransaction(c);
-			List<LocalidadDTO> list = localidadDAO.findByProvinciaId(c, idProvincia);
+			List<CityDTO> list = localidadDAO.findByProvinciaId(c, idProvincia);
 			JDBCUtils.commitTransaction(c);
 			logger.info("findByProvinciaId Localidad OK (prov={}, {} filas)", idProvincia, list.size());
 			return list;
@@ -71,7 +71,7 @@ public class LocalidadServiceImpl implements LocalidadService {
 	}
 
 	@Override
-	public boolean create(LocalidadDTO l) throws RentexpresException {
+	public boolean create(CityDTO l) throws RentexpresException {
 		try (Connection c = JDBCUtils.getConnection()) {
 			JDBCUtils.beginTransaction(c);
 			boolean ok = localidadDAO.create(c, l);
@@ -84,7 +84,7 @@ public class LocalidadServiceImpl implements LocalidadService {
 	}
 
 	@Override
-	public boolean update(LocalidadDTO l) throws RentexpresException {
+	public boolean update(CityDTO l) throws RentexpresException {
 		try (Connection c = JDBCUtils.getConnection()) {
 			JDBCUtils.beginTransaction(c);
 			boolean ok = localidadDAO.update(c, l);
@@ -97,7 +97,7 @@ public class LocalidadServiceImpl implements LocalidadService {
 	}
 
 	@Override
-	public boolean delete(LocalidadDTO l) throws RentexpresException {
+	public boolean delete(CityDTO l) throws RentexpresException {
 		try (Connection c = JDBCUtils.getConnection()) {
 			JDBCUtils.beginTransaction(c);
 			boolean ok = localidadDAO.delete(c, l);

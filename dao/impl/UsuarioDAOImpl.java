@@ -15,8 +15,8 @@ import org.jasypt.util.password.StrongPasswordEncryptor;
 import com.pinguela.rentexpres.dao.UsuarioDAO;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.model.UsuarioCriteria;
-import com.pinguela.rentexpres.model.UsuarioDTO;
+import com.pinguela.rentexpres.model.UserCriteria;
+import com.pinguela.rentexpres.model.UserDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
 /**
@@ -49,12 +49,12 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 *
 	 * @param connection Conexión JDBC usada para la operación.
 	 * @param id         Identificador del usuario a buscar.
-	 * @return UsuarioDTO con los datos del usuario encontrado, o null si no existe
+	 * @return UserDTO con los datos del usuario encontrado, o null si no existe
 	 *         o si el id es null.
 	 * @throws DataException Si ocurre un error SQL al realizar la consulta.
 	 */
 	@Override
-	public UsuarioDTO findById(Connection connection, Integer id) throws DataException {
+	public UserDTO findById(Connection connection, Integer id) throws DataException {
 		if (id == null) {
 			logger.warn("findById called with null id.");
 			return null;
@@ -93,7 +93,7 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 * @throws DataException Si ocurre un error SQL al insertar.
 	 */
 	@Override
-	public boolean create(Connection connection, UsuarioDTO usuario) throws DataException {
+	public boolean create(Connection connection, UserDTO usuario) throws DataException {
 		if (usuario == null) {
 			logger.warn("create called with null Usuario.");
 			return false;
@@ -136,7 +136,7 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 * @throws DataException Si ocurre un error SQL al actualizar.
 	 */
 	@Override
-	public boolean update(Connection connection, UsuarioDTO usuario) throws DataException {
+	public boolean update(Connection connection, UserDTO usuario) throws DataException {
 		if (usuario == null || usuario.getId() == null) {
 			logger.warn("update called with null Usuario or id.");
 			return false;
@@ -176,7 +176,7 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 * @throws DataException Si ocurre un error SQL al eliminar.
 	 */
 	@Override
-	public boolean delete(Connection connection, UsuarioDTO usuario, Integer id) throws DataException {
+	public boolean delete(Connection connection, UserDTO usuario, Integer id) throws DataException {
 		if (usuario == null || usuario.getId() == null) {
 			logger.warn("delete called with null Usuario or id.");
 			return false;
@@ -206,12 +206,12 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 * </p>
 	 *
 	 * @param connection Conexión JDBC usada para la operación.
-	 * @return Lista de UsuarioDTO con todos los usuarios existentes.
+	 * @return Lista de UserDTO con todos los usuarios existentes.
 	 * @throws DataException Si ocurre un error SQL al recuperar datos.
 	 */
 	@Override
-	public List<UsuarioDTO> findAll(Connection connection) throws DataException {
-		List<UsuarioDTO> usuarios = new ArrayList<>();
+	public List<UserDTO> findAll(Connection connection) throws DataException {
+		List<UserDTO> usuarios = new ArrayList<>();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -240,12 +240,12 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 * @param connection        Conexión JDBC usada para la operación.
 	 * @param nombreUsuario     Nombre de usuario a autenticar.
 	 * @param contrasenaEnClaro Contraseña en texto claro para comparar.
-	 * @return UsuarioDTO con los datos del usuario autenticado, o null si falla la
+	 * @return UserDTO con los datos del usuario autenticado, o null si falla la
 	 *         autenticación o alguno de los parámetros es null.
 	 * @throws DataException Si ocurre un error SQL al autenticar.
 	 */
 	@Override
-	public UsuarioDTO autenticar(Connection connection, String nombreUsuario, String contrasenaEnClaro)
+	public UserDTO autenticar(Connection connection, String nombreUsuario, String contrasenaEnClaro)
 			throws DataException {
 		if (nombreUsuario == null || contrasenaEnClaro == null) {
 			logger.warn("autenticar called with null parameters.");
@@ -280,15 +280,15 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 * </p>
 	 *
 	 * @param connection Conexión JDBC usada para la operación.
-	 * @param criteria   Objeto UsuarioCriteria con los filtros y la paginación.
-	 * @return Objeto Results<UsuarioDTO> con la lista de usuarios paginada y la
+	 * @param criteria   Objeto UserCriteria con los filtros y la paginación.
+	 * @return Objeto Results<UserDTO> con la lista de usuarios paginada y la
 	 *         información de total de registros.
 	 * @throws DataException Si ocurre un error SQL al realizar la consulta.
 	 */
 	@Override
-	public Results<UsuarioDTO> findByCriteria(Connection connection, UsuarioCriteria criteria) throws DataException {
-		Results<UsuarioDTO> results = new Results<>();
-		List<UsuarioDTO> listaCompleta = new ArrayList<>();
+	public Results<UserDTO> findByCriteria(Connection connection, UserCriteria criteria) throws DataException {
+		Results<UserDTO> results = new Results<>();
+		List<UserDTO> listaCompleta = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder(USUARIO_SELECT_BASE);
 		sql.append(" WHERE 1=1 ");
@@ -347,7 +347,7 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 			int totalRecords = listaCompleta.size();
 			int offset = (page - 1) * size;
 			int toIndex = Math.min(offset + size, totalRecords);
-			List<UsuarioDTO> paginatedList = new ArrayList<>();
+			List<UserDTO> paginatedList = new ArrayList<>();
 			if (offset < totalRecords && offset >= 0) {
 				paginatedList = listaCompleta.subList(offset, toIndex);
 			}
@@ -370,18 +370,18 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	}
 
 	/**
-	 * Carga un objeto UsuarioDTO a partir del ResultSet actual. Si el parámetro
+	 * Carga un objeto UserDTO a partir del ResultSet actual. Si el parámetro
 	 * authenticated es true, no asigna la contraseña en el DTO (para no exponerla).
 	 *
 	 * @param rs            ResultSet apuntando a la fila actual con datos de
 	 *                      usuario.
 	 * @param authenticated Si es true, omite la contraseña en la instancia DTO.
-	 * @return UsuarioDTO recién creado con todos los campos (salvo contraseña si
+	 * @return UserDTO recién creado con todos los campos (salvo contraseña si
 	 *         authenticated).
 	 * @throws SQLException Si ocurre un error al leer datos del ResultSet.
 	 */
-	private UsuarioDTO loadUsuario(ResultSet rs, boolean authenticated) throws SQLException {
-		UsuarioDTO usuario = new UsuarioDTO();
+	private UserDTO loadUsuario(ResultSet rs, boolean authenticated) throws SQLException {
+		UserDTO usuario = new UserDTO();
 		usuario.setId(rs.getInt("id_usuario"));
 		usuario.setNombreUsuario(rs.getString("nombre_usuario"));
 		usuario.setIdTipoUsuario(rs.getInt("id_tipo_usuario"));
@@ -399,12 +399,12 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 	 * isUpdate es true, añade al final el id para la cláusula WHERE.
 	 *
 	 * @param ps       PreparedStatement preparado con la consulta SQL.
-	 * @param usuario  UsuarioDTO que contiene los valores a asignar.
+	 * @param usuario  UserDTO que contiene los valores a asignar.
 	 * @param isUpdate True si se va a ejecutar un UPDATE (añade parámetro id al
 	 *                 final).
 	 * @throws SQLException Si ocurre un error al asignar los parámetros.
 	 */
-	private void setUsuarioParameters(PreparedStatement ps, UsuarioDTO usuario, boolean isUpdate) throws SQLException {
+	private void setUsuarioParameters(PreparedStatement ps, UserDTO usuario, boolean isUpdate) throws SQLException {
 		ps.setString(1, usuario.getNombreUsuario());
 		ps.setString(2, passwordEncryptor.encryptPassword(usuario.getContrasena()));
 		ps.setInt(3, usuario.getIdTipoUsuario());

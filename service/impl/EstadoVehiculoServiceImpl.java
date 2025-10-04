@@ -9,7 +9,7 @@ import com.pinguela.rentexpres.dao.EstadoVehiculoDAO;
 import com.pinguela.rentexpres.dao.impl.EstadoVehiculoDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.EstadoVehiculoDTO;
+import com.pinguela.rentexpres.model.VehicleStatusDTO;
 import com.pinguela.rentexpres.service.EstadoVehiculoService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -23,9 +23,9 @@ public class EstadoVehiculoServiceImpl implements EstadoVehiculoService {
     }
 
     @Override
-    public EstadoVehiculoDTO findById(Integer id) throws RentexpresException {
+    public VehicleStatusDTO findById(Integer id) throws RentexpresException {
         Connection connection = null;
-        EstadoVehiculoDTO estado = null;
+        VehicleStatusDTO estado = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
@@ -47,9 +47,9 @@ public class EstadoVehiculoServiceImpl implements EstadoVehiculoService {
     }
 
     @Override
-    public List<EstadoVehiculoDTO> findAll() throws RentexpresException {
+    public List<VehicleStatusDTO> findAll() throws RentexpresException {
         Connection connection = null;
-        List<EstadoVehiculoDTO> lista = null;
+        List<VehicleStatusDTO> lista = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);

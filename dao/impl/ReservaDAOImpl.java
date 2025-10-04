@@ -8,8 +8,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.dao.ReservaDAO;
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.ReservaDTO;
-import com.pinguela.rentexpres.model.ReservaCriteria;
+import com.pinguela.rentexpres.model.ReservationDTO;
+import com.pinguela.rentexpres.model.ReservationCriteria;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -25,7 +25,7 @@ public class ReservaDAOImpl implements ReservaDAO {
 			+ "INNER JOIN estado_reserva e ON r.id_estado_reserva = e.id_estado_reserva";
 
 	@Override
-	public ReservaDTO findById(Connection connection, Integer id) throws DataException {
+	public ReservationDTO findById(Connection connection, Integer id) throws DataException {
 		if (id == null) {
 			logger.warn("findById null id.");
 			return null;
@@ -39,7 +39,7 @@ public class ReservaDAOImpl implements ReservaDAO {
 			rs = ps.executeQuery();
 			if (rs.next()) {
 				logger.info("Reserva id: {}", id);
-				return loadReservaDTO(rs);
+				return loadReservationDTO(rs);
 			} else {
 				logger.warn("No se encontró Reserva con id: {}", id);
 			}
@@ -53,8 +53,8 @@ public class ReservaDAOImpl implements ReservaDAO {
 	}
 
 	@Override
-	public List<ReservaDTO> findAll(Connection connection) throws DataException {
-		List<ReservaDTO> lista = new ArrayList<>();
+	public List<ReservationDTO> findAll(Connection connection) throws DataException {
+		List<ReservationDTO> lista = new ArrayList<>();
 		String sql = RESERVA_SELECT_BASE + " ORDER BY r.fecha_inicio DESC";
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -62,7 +62,7 @@ public class ReservaDAOImpl implements ReservaDAO {
 			ps = connection.prepareStatement(sql);
 			rs = ps.executeQuery();
 			while (rs.next()) {
-				lista.add(loadReservaDTO(rs));
+				lista.add(loadReservationDTO(rs));
 			}
 			logger.info("Total Reservas found: {}", lista.size());
 		} catch (SQLException e) {
@@ -75,7 +75,7 @@ public class ReservaDAOImpl implements ReservaDAO {
 	}
 
 	@Override
-	public boolean create(Connection connection, ReservaDTO reserva) throws DataException {
+	public boolean create(Connection connection, ReservationDTO reserva) throws DataException {
 		if (reserva == null) {
 			logger.warn("create null Reserva.");
 			return false;
@@ -105,7 +105,7 @@ public class ReservaDAOImpl implements ReservaDAO {
 	}
 
 	@Override
-	public boolean update(Connection connection, ReservaDTO reserva) throws DataException {
+	public boolean update(Connection connection, ReservationDTO reserva) throws DataException {
 		if (reserva == null || reserva.getId() == null) {
 			logger.warn("update null Reserva or id.");
 			return false;
@@ -153,9 +153,9 @@ public class ReservaDAOImpl implements ReservaDAO {
 	}
 
 	@Override
-	public Results<ReservaDTO> findByCriteria(Connection connection, ReservaCriteria criteria) throws DataException {
-		Results<ReservaDTO> results = new Results<>();
-		List<ReservaDTO> lista = new ArrayList<>();
+	public Results<ReservationDTO> findByCriteria(Connection connection, ReservationCriteria criteria) throws DataException {
+		Results<ReservationDTO> results = new Results<>();
+		List<ReservationDTO> lista = new ArrayList<>();
 		int pageNumber = criteria.getPageNumber();
 		int pageSize = criteria.getPageSize();
 		int offset = (pageNumber - 1) * pageSize;
@@ -241,7 +241,7 @@ public class ReservaDAOImpl implements ReservaDAO {
 			}
 			rs = ps.executeQuery();
 			while (rs.next()) {
-				lista.add(loadReservaDTO(rs));
+				lista.add(loadReservationDTO(rs));
 			}
 			JDBCUtils.close(ps, rs);
 
@@ -272,7 +272,7 @@ public class ReservaDAOImpl implements ReservaDAO {
 		return results;
 	}
 
-	private void setReservaParameters(PreparedStatement ps, ReservaDTO reserva, boolean isUpdate) throws SQLException {
+	private void setReservaParameters(PreparedStatement ps, ReservationDTO reserva, boolean isUpdate) throws SQLException {
 		ps.setInt(1, reserva.getIdVehiculo());
 		ps.setInt(2, reserva.getIdCliente());
 		ps.setString(3, reserva.getFechaInicio());
@@ -288,8 +288,8 @@ public class ReservaDAOImpl implements ReservaDAO {
 		}
 	}
 
-	private ReservaDTO loadReservaDTO(ResultSet rs) throws SQLException {
-		ReservaDTO dto = new ReservaDTO();
+	private ReservationDTO loadReservationDTO(ResultSet rs) throws SQLException {
+		ReservationDTO dto = new ReservationDTO();
 		dto.setId(rs.getInt("id_reserva"));
 		dto.setIdVehiculo(rs.getInt("id_vehiculo"));
 		dto.setIdCliente(rs.getInt("id_cliente"));

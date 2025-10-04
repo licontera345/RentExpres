@@ -9,7 +9,7 @@ import com.pinguela.rentexpres.dao.TipoUsuarioDAO;
 import com.pinguela.rentexpres.dao.impl.TipoUsuarioDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.TipoUsuarioDTO;
+import com.pinguela.rentexpres.model.UserTypeDTO;
 import com.pinguela.rentexpres.service.TipoUsuarioService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -23,9 +23,9 @@ public class TipoUsuarioServiceImpl implements TipoUsuarioService {
 	}
 
 	@Override
-	public TipoUsuarioDTO findById(Integer id) throws RentexpresException {
+	public UserTypeDTO findById(Integer id) throws RentexpresException {
 		Connection connection = null;
-		TipoUsuarioDTO tipo = null;
+		UserTypeDTO tipo = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
@@ -47,9 +47,9 @@ public class TipoUsuarioServiceImpl implements TipoUsuarioService {
 	}
 
 	@Override
-	public List<TipoUsuarioDTO> findAll() throws RentexpresException {
+	public List<UserTypeDTO> findAll() throws RentexpresException {
 		Connection connection = null;
-		List<TipoUsuarioDTO> lista = null;
+		List<UserTypeDTO> lista = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);

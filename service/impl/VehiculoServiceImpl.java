@@ -17,8 +17,8 @@ import com.pinguela.rentexpres.dao.impl.VehiculoDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.model.VehiculoCriteria;
-import com.pinguela.rentexpres.model.VehiculoDTO;
+import com.pinguela.rentexpres.model.VehicleCriteria;
+import com.pinguela.rentexpres.model.VehicleDTO;
 import com.pinguela.rentexpres.service.FileService;
 import com.pinguela.rentexpres.service.VehiculoService;
 import com.pinguela.rentexpres.util.JDBCUtils;
@@ -36,13 +36,13 @@ public class VehiculoServiceImpl implements VehiculoService {
 	}
 
 	@Override
-	public VehiculoDTO findById(Integer id) throws RentexpresException {
+	public VehicleDTO findById(Integer id) throws RentexpresException {
 		Connection connection = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
 
-                        VehiculoDTO vehiculo = vehiculoDAO.findById(connection, id);
+                        VehicleDTO vehiculo = vehiculoDAO.findById(connection, id);
                         if (vehiculo != null && id != null) {
                                 List<String> imagePaths = fileService.listFiles(VEHICLE_IMAGE_FOLDER, id.longValue());
                                 if (!imagePaths.isEmpty()) {
@@ -63,14 +63,14 @@ public class VehiculoServiceImpl implements VehiculoService {
 	}
 
 	@Override
-	public List<VehiculoDTO> findAll() throws RentexpresException {
+	public List<VehicleDTO> findAll() throws RentexpresException {
 		Connection connection = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
 
-                        List<VehiculoDTO> vehiculos = vehiculoDAO.findAll(connection);
-                        for (VehiculoDTO vehiculo : vehiculos) {
+                        List<VehicleDTO> vehiculos = vehiculoDAO.findAll(connection);
+                        for (VehicleDTO vehiculo : vehiculos) {
                                 if (vehiculo.getId() != null) {
                                         List<String> imagePaths = fileService.listFiles(VEHICLE_IMAGE_FOLDER,
                                                         vehiculo.getId().longValue());
@@ -91,7 +91,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 	}
 
 	@Override
-	public boolean create(VehiculoDTO vehiculo, File imagen) throws RentexpresException {
+	public boolean create(VehicleDTO vehiculo, File imagen) throws RentexpresException {
 		Connection connection = null;
 		try {
 			connection = JDBCUtils.getConnection();
@@ -132,7 +132,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 	}
 
 	@Override
-	public boolean update(VehiculoDTO vehiculo, File nuevaImagen) throws RentexpresException {
+	public boolean update(VehicleDTO vehiculo, File nuevaImagen) throws RentexpresException {
 		Connection connection = null;
 		try {
 			connection = JDBCUtils.getConnection();
@@ -181,7 +181,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 			JDBCUtils.beginTransaction(connection);
 
 			// 1. Primero obtener el vehículo para manejar sus imágenes
-			VehiculoDTO vehiculo = vehiculoDAO.findById(connection, id);
+			VehicleDTO vehiculo = vehiculoDAO.findById(connection, id);
 			if (vehiculo == null) {
 				JDBCUtils.rollbackTransaction(connection);
 				logger.warn("No se encontró el vehículo con ID: {} para eliminar", id);
@@ -218,7 +218,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 	}
 
 	@Override
-	public Results<VehiculoDTO> findByCriteria(VehiculoCriteria criteria) throws RentexpresException {
+	public Results<VehicleDTO> findByCriteria(VehicleCriteria criteria) throws RentexpresException {
 		Connection connection = null;
 		try {
 			connection = JDBCUtils.getConnection();
@@ -226,7 +226,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 
 			// Validar y establecer valores por defecto para la paginación
 			if (criteria == null) {
-				criteria = new VehiculoCriteria();
+				criteria = new VehicleCriteria();
 			}
 			if (criteria.getPageNumber() == null || criteria.getPageNumber() < 1) {
 				criteria.setPageNumber(1);
@@ -236,11 +236,11 @@ public class VehiculoServiceImpl implements VehiculoService {
 			}
 
 			// Buscar vehículos según criterios
-			Results<VehiculoDTO> results = vehiculoDAO.findByCriteria(connection, criteria);
+			Results<VehicleDTO> results = vehiculoDAO.findByCriteria(connection, criteria);
 
 			// Para cada vehículo, obtener su imagen principal
 			if (results != null && results.getResults() != null) {
-                                for (VehiculoDTO vehiculo : results.getResults()) {
+                                for (VehicleDTO vehiculo : results.getResults()) {
                                         if (vehiculo.getId() != null) {
                                                 List<String> imagePaths = fileService.listFiles(VEHICLE_IMAGE_FOLDER,
                                                                 vehiculo.getId().longValue());
@@ -285,7 +285,7 @@ public class VehiculoServiceImpl implements VehiculoService {
                         JDBCUtils.beginTransaction(connection);
 
                         // 1. Obtener el vehículo actual
-                        VehiculoDTO vehiculo = vehiculoDAO.findById(connection, idVehiculo);
+                        VehicleDTO vehiculo = vehiculoDAO.findById(connection, idVehiculo);
                         if (vehiculo == null) {
                                 JDBCUtils.rollbackTransaction(connection);
                                 logger.warn("No se encontró el vehículo con ID: {} para actualizar imagen", idVehiculo);

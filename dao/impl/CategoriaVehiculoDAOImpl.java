@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.dao.CategoriaVehiculoDAO;
-import com.pinguela.rentexpres.model.CategoriaVehiculoDTO;
+import com.pinguela.rentexpres.model.CategoriaVehicleDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class CategoriaVehiculoDAOImpl implements CategoriaVehiculoDAO {
@@ -19,8 +19,8 @@ public class CategoriaVehiculoDAOImpl implements CategoriaVehiculoDAO {
     private static final Logger logger = LogManager.getLogger(CategoriaVehiculoDAOImpl.class);
 
     @Override
-    public CategoriaVehiculoDTO findById(Connection connection, Integer id) {
-        CategoriaVehiculoDTO cv = null;
+    public CategoriaVehicleDTO findById(Connection connection, Integer id) {
+        CategoriaVehicleDTO cv = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
 
@@ -43,8 +43,8 @@ public class CategoriaVehiculoDAOImpl implements CategoriaVehiculoDAO {
     }
 
     @Override
-    public List<CategoriaVehiculoDTO> findAll(Connection connection) {
-        List<CategoriaVehiculoDTO> lista = new ArrayList<>();
+    public List<CategoriaVehicleDTO> findAll(Connection connection) {
+        List<CategoriaVehicleDTO> lista = new ArrayList<>();
         PreparedStatement ps = null;
         ResultSet rs = null;
 
@@ -65,8 +65,8 @@ public class CategoriaVehiculoDAOImpl implements CategoriaVehiculoDAO {
         return lista;
     }
 
-    private CategoriaVehiculoDTO loadCategoriaVehiculo(ResultSet rs) throws SQLException {
-        CategoriaVehiculoDTO cv = new CategoriaVehiculoDTO();
+    private CategoriaVehicleDTO loadCategoriaVehiculo(ResultSet rs) throws SQLException {
+        CategoriaVehicleDTO cv = new CategoriaVehicleDTO();
         cv.setId(rs.getInt("id_categoria"));
         cv.setNombreCategoria(rs.getString("nombre_categoria"));
         return cv;

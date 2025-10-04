@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.dao.TipoUsuarioDAO;
-import com.pinguela.rentexpres.model.TipoUsuarioDTO;
+import com.pinguela.rentexpres.model.UserTypeDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class TipoUsuarioDAOImpl implements TipoUsuarioDAO {
@@ -19,8 +19,8 @@ public class TipoUsuarioDAOImpl implements TipoUsuarioDAO {
 	private static final Logger logger = LogManager.getLogger(TipoUsuarioDAOImpl.class);
 
 	@Override
-    public TipoUsuarioDTO findById(Connection connection, Integer id) {
-        TipoUsuarioDTO tu = null;
+    public UserTypeDTO findById(Connection connection, Integer id) {
+        UserTypeDTO tu = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
 
@@ -42,8 +42,8 @@ public class TipoUsuarioDAOImpl implements TipoUsuarioDAO {
     }
 
 	@Override
-	public List<TipoUsuarioDTO> findAll(Connection connection) {
-		List<TipoUsuarioDTO> lista = new ArrayList<>();
+	public List<UserTypeDTO> findAll(Connection connection) {
+		List<UserTypeDTO> lista = new ArrayList<>();
 
 		try (PreparedStatement ps = connection
 				.prepareStatement("SELECT id_tipo_usuario, nombre_tipo FROM tipo_usuario")) {
@@ -60,8 +60,8 @@ public class TipoUsuarioDAOImpl implements TipoUsuarioDAO {
 		return lista;
 	}
 
-	private TipoUsuarioDTO loadTipoUsuario(ResultSet rs) throws SQLException {
-		TipoUsuarioDTO tu = new TipoUsuarioDTO();
+	private UserTypeDTO loadTipoUsuario(ResultSet rs) throws SQLException {
+		UserTypeDTO tu = new UserTypeDTO();
 		tu.setId(rs.getInt("id_tipo_usuario"));
 		tu.setNombreTipo(rs.getString("nombre_tipo"));
 		return tu;

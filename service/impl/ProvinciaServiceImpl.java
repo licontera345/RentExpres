@@ -9,7 +9,7 @@ import com.pinguela.rentexpres.dao.ProvinciaDAO;
 import com.pinguela.rentexpres.dao.impl.ProvinciaDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.ProvinciaDTO;
+import com.pinguela.rentexpres.model.ProvinceDTO;
 import com.pinguela.rentexpres.service.ProvinciaService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -23,9 +23,9 @@ public class ProvinciaServiceImpl implements ProvinciaService {
 	}
 
 	@Override
-	public ProvinciaDTO findById(Integer id) throws RentexpresException {
+	public ProvinceDTO findById(Integer id) throws RentexpresException {
 		Connection connection = null;
-		ProvinciaDTO provincia = null;
+		ProvinceDTO provincia = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
@@ -43,9 +43,9 @@ public class ProvinciaServiceImpl implements ProvinciaService {
 	}
 
 	@Override
-	public List<ProvinciaDTO> findAll() throws RentexpresException {
+	public List<ProvinceDTO> findAll() throws RentexpresException {
 		Connection connection = null;
-		List<ProvinciaDTO> lista = null;
+		List<ProvinceDTO> lista = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
@@ -63,7 +63,7 @@ public class ProvinciaServiceImpl implements ProvinciaService {
 	}
 
 	@Override
-	public boolean create(ProvinciaDTO provincia) throws RentexpresException {
+	public boolean create(ProvinceDTO provincia) throws RentexpresException {
 		Connection connection = null;
 		boolean creado = false;
 		try {
@@ -88,7 +88,7 @@ public class ProvinciaServiceImpl implements ProvinciaService {
 	}
 
 	@Override
-	public boolean update(ProvinciaDTO provincia) throws RentexpresException {
+	public boolean update(ProvinceDTO provincia) throws RentexpresException {
 		Connection connection = null;
 		boolean actualizado = false;
 		try {
@@ -113,7 +113,7 @@ public class ProvinciaServiceImpl implements ProvinciaService {
 	}
 
 	@Override
-	public boolean delete(ProvinciaDTO provincia) throws RentexpresException {
+	public boolean delete(ProvinceDTO provincia) throws RentexpresException {
 		Connection connection = null;
 		boolean eliminado = false;
 		try {

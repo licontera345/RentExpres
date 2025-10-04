@@ -9,7 +9,7 @@ import com.pinguela.rentexpres.dao.EstadoReservaDAO;
 import com.pinguela.rentexpres.dao.impl.EstadoReservaDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.EstadoReservaDTO;
+import com.pinguela.rentexpres.model.ReservationStatusDTO;
 import com.pinguela.rentexpres.service.EstadoReservaService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -22,9 +22,9 @@ public class EstadoReservaServiceImpl implements EstadoReservaService {
     }
     
     @Override
-    public EstadoReservaDTO findById(Integer id) throws RentexpresException {
+    public ReservationStatusDTO findById(Integer id) throws RentexpresException {
         Connection connection = null;
-        EstadoReservaDTO er = null;
+        ReservationStatusDTO er = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
@@ -42,9 +42,9 @@ public class EstadoReservaServiceImpl implements EstadoReservaService {
     }
     
     @Override
-    public List<EstadoReservaDTO> findAll() throws RentexpresException {
+    public List<ReservationStatusDTO> findAll() throws RentexpresException {
         Connection connection = null;
-        List<EstadoReservaDTO> lista = null;
+        List<ReservationStatusDTO> lista = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);

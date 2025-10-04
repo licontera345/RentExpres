@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.dao.EstadoVehiculoDAO;
-import com.pinguela.rentexpres.model.EstadoVehiculoDTO;
+import com.pinguela.rentexpres.model.VehicleStatusDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class EstadoVehiculoDAOImpl implements EstadoVehiculoDAO {
@@ -19,8 +19,8 @@ public class EstadoVehiculoDAOImpl implements EstadoVehiculoDAO {
     private static final Logger logger = LogManager.getLogger(EstadoVehiculoDAOImpl.class);
 
     @Override
-    public EstadoVehiculoDTO findById(Connection connection, Integer id) {
-        EstadoVehiculoDTO ev = null;
+    public VehicleStatusDTO findById(Connection connection, Integer id) {
+        VehicleStatusDTO ev = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
 
@@ -42,8 +42,8 @@ public class EstadoVehiculoDAOImpl implements EstadoVehiculoDAO {
     }
 
     @Override
-    public List<EstadoVehiculoDTO> findAll(Connection connection) {
-        List<EstadoVehiculoDTO> lista = new ArrayList<>();
+    public List<VehicleStatusDTO> findAll(Connection connection) {
+        List<VehicleStatusDTO> lista = new ArrayList<>();
 
         try (PreparedStatement ps = connection.prepareStatement("SELECT id_estado_vehiculo, nombre_estado FROM estado_vehiculo")) {
             try (ResultSet rs = ps.executeQuery()) {
@@ -58,8 +58,8 @@ public class EstadoVehiculoDAOImpl implements EstadoVehiculoDAO {
         return lista;
     }
 
-    private EstadoVehiculoDTO loadEstadoVehiculo(ResultSet rs) throws SQLException {
-        EstadoVehiculoDTO ev = new EstadoVehiculoDTO();
+    private VehicleStatusDTO loadEstadoVehiculo(ResultSet rs) throws SQLException {
+        VehicleStatusDTO ev = new VehicleStatusDTO();
         ev.setId(rs.getInt("id_estado_vehiculo"));
         ev.setNombreEstado(rs.getString("nombre_estado"));
         return ev;

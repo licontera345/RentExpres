@@ -9,8 +9,8 @@ import com.pinguela.rentexpres.dao.ReservaDAO;
 import com.pinguela.rentexpres.dao.impl.ReservaDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.ReservaCriteria;
-import com.pinguela.rentexpres.model.ReservaDTO;
+import com.pinguela.rentexpres.model.ReservationCriteria;
+import com.pinguela.rentexpres.model.ReservationDTO;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.service.ReservaService;
 import com.pinguela.rentexpres.util.JDBCUtils;
@@ -25,9 +25,9 @@ public class ReservaServiceImpl implements ReservaService {
 	}
 
 	@Override
-	public ReservaDTO findById(Integer id) throws RentexpresException {
+	public ReservationDTO findById(Integer id) throws RentexpresException {
 		Connection connection = null;
-		ReservaDTO reserva = null;
+		ReservationDTO reserva = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
@@ -45,9 +45,9 @@ public class ReservaServiceImpl implements ReservaService {
 	}
 
 	@Override
-	public List<ReservaDTO> findAll() throws RentexpresException {
+	public List<ReservationDTO> findAll() throws RentexpresException {
 		Connection connection = null;
-		List<ReservaDTO> reservas = null;
+		List<ReservationDTO> reservas = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
@@ -66,7 +66,7 @@ public class ReservaServiceImpl implements ReservaService {
 	}
 
 	@Override
-	public boolean create(ReservaDTO reserva) throws RentexpresException {
+	public boolean create(ReservationDTO reserva) throws RentexpresException {
 		Connection connection = null;
 		boolean creado = false;
 		try {
@@ -91,7 +91,7 @@ public class ReservaServiceImpl implements ReservaService {
 	}
 
 	@Override
-	public boolean update(ReservaDTO reserva) throws RentexpresException {
+	public boolean update(ReservationDTO reserva) throws RentexpresException {
 		Connection connection = null;
 		boolean actualizado = false;
 		try {
@@ -141,9 +141,9 @@ public class ReservaServiceImpl implements ReservaService {
 	}
 
 	@Override
-	public Results<ReservaDTO> findByCriteria(ReservaCriteria criteria) throws RentexpresException {
+	public Results<ReservationDTO> findByCriteria(ReservationCriteria criteria) throws RentexpresException {
 		Connection connection = null;
-		Results<ReservaDTO> results = null;
+		Results<ReservationDTO> results = null;
 		try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);

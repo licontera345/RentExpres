@@ -5,22 +5,22 @@ import java.util.List;
 
 import com.pinguela.rentexpres.exception.RentexpresException;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.model.VehiculoCriteria;
-import com.pinguela.rentexpres.model.VehiculoDTO;
+import com.pinguela.rentexpres.model.VehicleCriteria;
+import com.pinguela.rentexpres.model.VehicleDTO;
 
 public interface VehiculoService {
 
-	public VehiculoDTO findById(Integer id) throws RentexpresException;
+	public VehicleDTO findById(Integer id) throws RentexpresException;
 
-	public List<VehiculoDTO> findAll() throws RentexpresException;
+	public List<VehicleDTO> findAll() throws RentexpresException;
 
 	public boolean delete(Integer id) throws RentexpresException;
 
-	public Results<VehiculoDTO> findByCriteria(VehiculoCriteria criteria) throws RentexpresException;
+	public Results<VehicleDTO> findByCriteria(VehicleCriteria criteria) throws RentexpresException;
 
-	boolean create(VehiculoDTO vehiculo, File imagen) throws RentexpresException;
+	boolean create(VehicleDTO vehiculo, File imagen) throws RentexpresException;
 
-	boolean update(VehiculoDTO vehiculo, File nuevaImagen) throws RentexpresException;
+	boolean update(VehicleDTO vehiculo, File nuevaImagen) throws RentexpresException;
 
 	List<String> getVehicleImages(Integer idVehiculo) throws RentexpresException;
 

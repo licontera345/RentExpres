@@ -16,8 +16,8 @@ import com.pinguela.rentexpres.dao.impl.UsuarioDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.model.UsuarioCriteria;
-import com.pinguela.rentexpres.model.UsuarioDTO;
+import com.pinguela.rentexpres.model.UserCriteria;
+import com.pinguela.rentexpres.model.UserDTO;
 import com.pinguela.rentexpres.service.FileService;
 import com.pinguela.rentexpres.service.UsuarioService;
 import com.pinguela.rentexpres.util.JDBCUtils;
@@ -58,13 +58,13 @@ public class UsuarioServiceImpl implements UsuarioService {
      * </p>
      *
      * @param id Identificador del usuario a buscar.
-     * @return {@link UsuarioDTO} sin la contraseña, o null si no existe.
+     * @return {@link UserDTO} sin la contraseña, o null si no existe.
      * @throws RentexpresException Si ocurre un error de conexión o datos.
      */
     @Override
-    public UsuarioDTO findById(Integer id) throws RentexpresException {
+    public UserDTO findById(Integer id) throws RentexpresException {
         Connection connection = null;
-        UsuarioDTO usuario = null;
+        UserDTO usuario = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
@@ -94,21 +94,21 @@ public class UsuarioServiceImpl implements UsuarioService {
      * transacción y devuelve la lista.
      * </p>
      *
-     * @return Lista de {@link UsuarioDTO} sin contraseñas, o lista vacía si no hay
+     * @return Lista de {@link UserDTO} sin contraseñas, o lista vacía si no hay
      *         usuarios.
      * @throws RentexpresException Si ocurre un error de conexión o datos.
      */
     @Override
-    public List<UsuarioDTO> findAll() throws RentexpresException {
+    public List<UserDTO> findAll() throws RentexpresException {
         Connection connection = null;
-        List<UsuarioDTO> lista = null;
+        List<UserDTO> lista = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
 
             lista = usuarioDAO.findAll(connection);
             if (lista != null) {
-                for (UsuarioDTO u : lista) {
+                for (UserDTO u : lista) {
                     u.setContrasena(null);
                 }
             }
@@ -129,7 +129,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * {@inheritDoc}
      * <p>
      * Crea un nuevo usuario. Abre conexión, inicia transacción, llama a
-     * {@link UsuarioDAO#create(Connection, UsuarioDTO)}, envía correo de
+     * {@link UsuarioDAO#create(Connection, UserDTO)}, envía correo de
      * bienvenida si se crea correctamente, sube imágenes asociadas, limpia la
      * contraseña antes de devolver resultado y maneja transacción.
      * </p>
@@ -141,7 +141,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * @throws RentexpresException Si hay error en conexión, datos o envío de correo.
      */
     @Override
-    public boolean create(UsuarioDTO usuario) throws RentexpresException {
+    public boolean create(UserDTO usuario) throws RentexpresException {
         Connection connection = null;
         boolean creado = false;
         try {
@@ -181,7 +181,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * {@inheritDoc}
      * <p>
      * Actualiza un usuario existente. Abre conexión, inicia transacción, llama a
-     * {@link UsuarioDAO#update(Connection, UsuarioDTO)}, limpia contraseña y,
+     * {@link UsuarioDAO#update(Connection, UserDTO)}, limpia contraseña y,
      * si hay imágenes, las sube. Maneja transacción en caso de éxito o fallo.
      * </p>
      *
@@ -191,7 +191,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * @throws RentexpresException Si hay error en conexión o datos.
      */
     @Override
-    public boolean update(UsuarioDTO usuario) throws RentexpresException {
+    public boolean update(UserDTO usuario) throws RentexpresException {
         Connection connection = null;
         boolean actualizado = false;
         try {
@@ -223,7 +223,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * {@inheritDoc}
      * <p>
      * Elimina un usuario existente. Abre conexión, inicia transacción, llama a
-     * {@link UsuarioDAO#delete(Connection, UsuarioDTO, Integer)}, y maneja
+     * {@link UsuarioDAO#delete(Connection, UserDTO, Integer)}, y maneja
      * transacción en función del resultado.
      * </p>
      *
@@ -234,7 +234,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * @throws RentexpresException Si hay error en conexión o datos.
      */
     @Override
-    public boolean delete(UsuarioDTO usuario, Integer id) throws RentexpresException {
+    public boolean delete(UserDTO usuario, Integer id) throws RentexpresException {
         Connection connection = null;
         boolean eliminado = false;
         try {
@@ -270,14 +270,14 @@ public class UsuarioServiceImpl implements UsuarioService {
      *
      * @param nombreUsuario     Nombre de usuario para autenticar.
      * @param contrasenaEnClaro Contraseña en texto claro.
-     * @return {@link UsuarioDTO} sin contraseña si la autenticación fue
+     * @return {@link UserDTO} sin contraseña si la autenticación fue
      *         exitosa; null en caso contrario.
      * @throws RentexpresException Si hay error en conexión o datos.
      */
     @Override
-    public UsuarioDTO autenticar(String nombreUsuario, String contrasenaEnClaro) throws RentexpresException {
+    public UserDTO autenticar(String nombreUsuario, String contrasenaEnClaro) throws RentexpresException {
         Connection connection = null;
-        UsuarioDTO usuario = null;
+        UserDTO usuario = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
@@ -304,27 +304,27 @@ public class UsuarioServiceImpl implements UsuarioService {
      * <p>
      * Busca usuarios según criterios de paginación y filtros. Abre conexión,
      * inicia transacción, llama a
-     * {@link UsuarioDAO#findByCriteria(Connection, UsuarioCriteria)}, limpia
+     * {@link UsuarioDAO#findByCriteria(Connection, UserCriteria)}, limpia
      * contraseñas, cierra transacción y devuelve resultados.
      * </p>
      *
-     * @param criteria Objeto {@link UsuarioCriteria} que contiene filtros y
+     * @param criteria Objeto {@link UserCriteria} que contiene filtros y
      *                 parámetros de paginación.
-     * @return {@link Results}&lt;{@link UsuarioDTO}&gt; con la lista paginada de
+     * @return {@link Results}&lt;{@link UserDTO}&gt; con la lista paginada de
      *         usuarios, sin contraseñas, y el total de registros.
      * @throws RentexpresException Si hay error en conexión o datos.
      */
     @Override
-    public Results<UsuarioDTO> findByCriteria(UsuarioCriteria criteria) throws RentexpresException {
+    public Results<UserDTO> findByCriteria(UserCriteria criteria) throws RentexpresException {
         Connection connection = null;
-        Results<UsuarioDTO> results = null;
+        Results<UserDTO> results = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
 
             results = usuarioDAO.findByCriteria(connection, criteria);
             if (results != null && results.getResults() != null) {
-                for (UsuarioDTO u : results.getResults()) {
+                for (UserDTO u : results.getResults()) {
                     u.setContrasena(null);
                 }
             }
@@ -351,7 +351,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * @param replaceExisting  si es {@code true} elimina las imágenes existentes
      *                         antes de guardar las nuevas
      */
-    private void storeUserImages(UsuarioDTO usuario, boolean replaceExisting) {
+    private void storeUserImages(UserDTO usuario, boolean replaceExisting) {
         if (usuario == null || usuario.getId() == null || usuario.getImagenes() == null
                 || usuario.getImagenes().isEmpty()) {
             return;

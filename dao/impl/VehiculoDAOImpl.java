@@ -3,8 +3,8 @@ package com.pinguela.rentexpres.dao.impl;
 import com.pinguela.rentexpres.dao.VehiculoDAO;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.model.VehiculoCriteria;
-import com.pinguela.rentexpres.model.VehiculoDTO;
+import com.pinguela.rentexpres.model.VehicleCriteria;
+import com.pinguela.rentexpres.model.VehicleDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,14 +23,14 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 			+ "INNER JOIN categoria_vehiculo c ON v.id_categoria = c.id_categoria";
 
 	@Override
-	public VehiculoDTO findById(Connection connection, Integer id) throws DataException {
-		VehiculoDTO vehiculo = null;
+	public VehicleDTO findById(Connection connection, Integer id) throws DataException {
+		VehicleDTO vehiculo = null;
 		String sql = VEHICULO_SELECT_BASE + " WHERE v.id_vehiculo = ?";
 		try (PreparedStatement ps = connection.prepareStatement(sql)) {
 			ps.setInt(1, id);
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) {
-					vehiculo = loadVehiculoDTO(rs);
+					vehiculo = loadVehicleDTO(rs);
 					logger.info("Vehículo encontrado con ID: {}", id);
 				}
 			}
@@ -42,12 +42,12 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 	}
 
 	@Override
-	public List<VehiculoDTO> findAll(Connection connection) throws DataException {
-		List<VehiculoDTO> lista = new ArrayList<>();
+	public List<VehicleDTO> findAll(Connection connection) throws DataException {
+		List<VehicleDTO> lista = new ArrayList<>();
 		String sql = VEHICULO_SELECT_BASE;
 		try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
-				lista.add(loadVehiculoDTO(rs));
+				lista.add(loadVehicleDTO(rs));
 			}
 			logger.info("Total de Vehículos encontrados: {}", lista.size());
 		} catch (SQLException e) {
@@ -58,7 +58,7 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 	}
 
 	@Override
-	public boolean create(Connection connection, VehiculoDTO vehiculo) throws DataException {
+	public boolean create(Connection connection, VehicleDTO vehiculo) throws DataException {
 		String sql = "INSERT INTO vehiculo (marca, modelo, anio_fabricacion, id_categoria, id_estado_vehiculo, "
 				+ "placa, precio_dia, numero_bastidor, kilometraje_actual) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -86,7 +86,7 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 	}
 
 	@Override
-	public boolean update(Connection connection, VehiculoDTO vehiculo) throws DataException {
+	public boolean update(Connection connection, VehicleDTO vehiculo) throws DataException {
 		String sql = "UPDATE vehiculo SET marca = ?, modelo = ?, anio_fabricacion = ?, id_categoria = ?, "
 				+ "id_estado_vehiculo = ?, placa = ?, precio_dia = ?, numero_bastidor = ?, "
 				+ "kilometraje_actual = ?, WHERE id_vehiculo = ?";
@@ -122,9 +122,9 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 	}
 
 	@Override
-	public Results<VehiculoDTO> findByCriteria(Connection connection, VehiculoCriteria criteria) throws DataException {
-		Results<VehiculoDTO> results = new Results<>();
-		List<VehiculoDTO> lista = new ArrayList<>();
+	public Results<VehicleDTO> findByCriteria(Connection connection, VehicleCriteria criteria) throws DataException {
+		Results<VehicleDTO> results = new Results<>();
+		List<VehicleDTO> lista = new ArrayList<>();
 		int pageNumber = criteria.getPageNumber();
 		int pageSize = criteria.getPageSize();
 		int offset = (pageNumber - 1) * pageSize;
@@ -202,7 +202,7 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 			if (rs.absolute(offset + 1)) {
 				int count = 0;
 				do {
-					lista.add(loadVehiculoDTO(rs));
+					lista.add(loadVehicleDTO(rs));
 					count++;
 				} while (count < pageSize && rs.next());
 			}
@@ -225,7 +225,7 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 		return results;
 	}
 
-	private void setVehiculoParameters(PreparedStatement ps, VehiculoDTO vehiculo) throws SQLException {
+	private void setVehiculoParameters(PreparedStatement ps, VehicleDTO vehiculo) throws SQLException {
 		ps.setString(1, vehiculo.getMarca());
 		ps.setString(2, vehiculo.getModelo());
 		ps.setInt(3, vehiculo.getAnioFabricacion());
@@ -237,8 +237,8 @@ public class VehiculoDAOImpl implements VehiculoDAO {
 		ps.setInt(9, vehiculo.getKilometrajeActual());
 	}
 
-	private VehiculoDTO loadVehiculoDTO(ResultSet rs) throws SQLException {
-		VehiculoDTO vehiculo = new VehiculoDTO();
+	private VehicleDTO loadVehicleDTO(ResultSet rs) throws SQLException {
+		VehicleDTO vehiculo = new VehicleDTO();
 		vehiculo.setId(rs.getInt("id_vehiculo"));
 		vehiculo.setMarca(rs.getString("marca"));
 		vehiculo.setModelo(rs.getString("modelo"));
