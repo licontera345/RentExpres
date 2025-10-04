@@ -4,11 +4,11 @@ import java.sql.Connection;
 import java.util.List;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.model.UsuarioCriteria;
-import com.pinguela.rentexpres.model.UsuarioDTO;
+import com.pinguela.rentexpres.model.UserCriteria;
+import com.pinguela.rentexpres.model.UserDTO;
 
 /**
- * Interfaz DAO para operaciones CRUD y de búsqueda de objetos UsuarioDTO. Todas
+ * Interfaz DAO para operaciones CRUD y de búsqueda de objetos UserDTO. Todas
  * las operaciones reciben una conexión JDBC y, en caso de error, lanzan
  * DataException.
  *
@@ -22,10 +22,10 @@ public interface UsuarioDAO {
 	 *
 	 * @param connection Conexión JDBC usada para la operación.
 	 * @param id         Identificador del usuario a buscar.
-	 * @return UsuarioDTO con los datos del usuario encontrado, o null si no existe.
+	 * @return UserDTO con los datos del usuario encontrado, o null si no existe.
 	 * @throws DataException Si ocurre un error en la consulta.
 	 */
-	public UsuarioDTO findById(Connection connection, Integer id) throws DataException;
+	public UserDTO findById(Connection connection, Integer id) throws DataException;
 
 	/**
 	 * Crea un nuevo usuario en la base de datos.
@@ -35,7 +35,7 @@ public interface UsuarioDAO {
 	 * @return true si la inserción tuvo éxito, false en caso contrario.
 	 * @throws DataException Si ocurre un error al insertar.
 	 */
-	public boolean create(Connection connection, UsuarioDTO usuario) throws DataException;
+	public boolean create(Connection connection, UserDTO usuario) throws DataException;
 
 	/**
 	 * Actualiza los datos de un usuario existente.
@@ -45,7 +45,7 @@ public interface UsuarioDAO {
 	 * @return true si la actualización tuvo éxito, false en caso contrario.
 	 * @throws DataException Si ocurre un error al actualizar.
 	 */
-	public boolean update(Connection connection, UsuarioDTO usuario) throws DataException;
+	public boolean update(Connection connection, UserDTO usuario) throws DataException;
 
 	/**
 	 * Elimina un usuario de la base de datos.
@@ -56,16 +56,16 @@ public interface UsuarioDAO {
 	 * @return true si la eliminación tuvo éxito, false en caso contrario.
 	 * @throws DataException Si ocurre un error al eliminar.
 	 */
-	public boolean delete(Connection connection, UsuarioDTO usuario, Integer id) throws DataException;
+	public boolean delete(Connection connection, UserDTO usuario, Integer id) throws DataException;
 
 	/**
 	 * Recupera todos los usuarios en la base de datos.
 	 *
 	 * @param connection Conexión JDBC usada para la operación.
-	 * @return Lista de UsuarioDTO con todos los usuarios existentes.
+	 * @return Lista de UserDTO con todos los usuarios existentes.
 	 * @throws DataException Si ocurre un error en la consulta.
 	 */
-	public List<UsuarioDTO> findAll(Connection connection) throws DataException;
+	public List<UserDTO> findAll(Connection connection) throws DataException;
 
 	/**
 	 * Autentica a un usuario en función de nombre de usuario y contraseña en claro.
@@ -73,21 +73,21 @@ public interface UsuarioDAO {
 	 * @param connection        Conexión JDBC usada para la operación.
 	 * @param nombreUsuario     Nombre de usuario a autenticar.
 	 * @param contrasenaEnClaro Contraseña en texto claro para comparar.
-	 * @return UsuarioDTO con los datos del usuario autenticado, o null si falla la
+	 * @return UserDTO con los datos del usuario autenticado, o null si falla la
 	 *         autenticación.
 	 * @throws DataException Si ocurre un error en la consulta.
 	 */
-	public UsuarioDTO autenticar(Connection connection, String nombreUsuario, String contrasenaEnClaro)
+	public UserDTO autenticar(Connection connection, String nombreUsuario, String contrasenaEnClaro)
 			throws DataException;
 
 	/**
 	 * Busca usuarios según criterios de paginación y filtros.
 	 *
 	 * @param connection Conexión JDBC usada para la operación.
-	 * @param criteria   Objeto UsuarioCriteria con los filtros y la paginación.
-	 * @return Objeto Results<UsuarioDTO> con la lista de usuarios y la información
+	 * @param criteria   Objeto UserCriteria con los filtros y la paginación.
+	 * @return Objeto Results<UserDTO> con la lista de usuarios y la información
 	 *         de total de registros.
 	 * @throws DataException Si ocurre un error en la consulta.
 	 */
-	public Results<UsuarioDTO> findByCriteria(Connection connection, UsuarioCriteria criteria) throws DataException;
+	public Results<UserDTO> findByCriteria(Connection connection, UserCriteria criteria) throws DataException;
 }

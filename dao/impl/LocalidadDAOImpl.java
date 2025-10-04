@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.dao.LocalidadDAO;
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.LocalidadDTO;
+import com.pinguela.rentexpres.model.CityDTO;
 
 public class LocalidadDAOImpl implements LocalidadDAO {
 
@@ -22,7 +22,7 @@ public class LocalidadDAOImpl implements LocalidadDAO {
 	private static final String BASE_SELECT = "SELECT id_localidad, nombre_localidad, id_provincia FROM localidad";
 
 	@Override
-	public LocalidadDTO findById(Connection c, Integer id) throws DataException {
+	public CityDTO findById(Connection c, Integer id) throws DataException {
 		String sql = BASE_SELECT + " WHERE id_localidad = ?";
 		try (PreparedStatement ps = c.prepareStatement(sql)) {
 			ps.setInt(1, id);
@@ -36,10 +36,10 @@ public class LocalidadDAOImpl implements LocalidadDAO {
 	}
 
 	@Override
-	public List<LocalidadDTO> findAll(Connection c) throws DataException {
+	public List<CityDTO> findAll(Connection c) throws DataException {
 		try (PreparedStatement ps = c.prepareStatement(BASE_SELECT); ResultSet rs = ps.executeQuery()) {
 
-			List<LocalidadDTO> out = new ArrayList<>();
+			List<CityDTO> out = new ArrayList<>();
 			while (rs.next())
 				out.add(load(rs));
 			return out;
@@ -51,12 +51,12 @@ public class LocalidadDAOImpl implements LocalidadDAO {
 	}
 
 	@Override
-	public List<LocalidadDTO> findByProvinciaId(Connection c, Integer idProvincia) throws DataException {
+	public List<CityDTO> findByProvinciaId(Connection c, Integer idProvincia) throws DataException {
 		String sql = BASE_SELECT + " WHERE id_provincia = ? ORDER BY nombre_localidad";
 		try (PreparedStatement ps = c.prepareStatement(sql)) {
 			ps.setInt(1, idProvincia);
 			try (ResultSet rs = ps.executeQuery()) {
-				List<LocalidadDTO> out = new ArrayList<>();
+				List<CityDTO> out = new ArrayList<>();
 				while (rs.next())
 					out.add(load(rs));
 				return out;
@@ -69,7 +69,7 @@ public class LocalidadDAOImpl implements LocalidadDAO {
 
 	
 	@Override
-	public boolean create(Connection c, LocalidadDTO l) throws DataException {
+	public boolean create(Connection c, CityDTO l) throws DataException {
 		String sql = "INSERT INTO localidad (nombre_localidad, id_provincia) VALUES (?, ?)";
 		try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 			set(ps, l, false);
@@ -87,7 +87,7 @@ public class LocalidadDAOImpl implements LocalidadDAO {
 	}
 
 	@Override
-	public boolean update(Connection c, LocalidadDTO l) throws DataException {
+	public boolean update(Connection c, CityDTO l) throws DataException {
 		String sql = "UPDATE localidad SET nombre_localidad = ?, id_provincia = ? WHERE id_localidad = ?";
 		try (PreparedStatement ps = c.prepareStatement(sql)) {
 			set(ps, l, true);
@@ -98,7 +98,7 @@ public class LocalidadDAOImpl implements LocalidadDAO {
 	}
 
 	@Override
-	public boolean delete(Connection c, LocalidadDTO l) throws DataException {
+	public boolean delete(Connection c, CityDTO l) throws DataException {
 		String sql = "DELETE FROM localidad WHERE id_localidad = ?";
 		try (PreparedStatement ps = c.prepareStatement(sql)) {
 			ps.setInt(1, l.getId());
@@ -109,15 +109,15 @@ public class LocalidadDAOImpl implements LocalidadDAO {
 	}
 
 	
-	private static void set(PreparedStatement ps, LocalidadDTO l, boolean update) throws SQLException {
+	private static void set(PreparedStatement ps, CityDTO l, boolean update) throws SQLException {
 		ps.setString(1, l.getNombre());
 		ps.setInt(2, l.getIdProvincia());
 		if (update)
 			ps.setInt(3, l.getId());
 	}
 
-	private static LocalidadDTO load(ResultSet rs) throws SQLException {
-		LocalidadDTO l = new LocalidadDTO();
+	private static CityDTO load(ResultSet rs) throws SQLException {
+		CityDTO l = new CityDTO();
 		l.setId(rs.getInt("id_localidad"));
 		l.setNombre(rs.getString("nombre_localidad"));
 		l.setIdProvincia(rs.getInt("id_provincia"));

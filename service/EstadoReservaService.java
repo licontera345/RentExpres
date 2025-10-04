@@ -2,10 +2,10 @@ package com.pinguela.rentexpres.service;
 
 import java.util.List;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.EstadoReservaDTO;
+import com.pinguela.rentexpres.model.ReservationStatusDTO;
 
 public interface EstadoReservaService {
-	public EstadoReservaDTO findById(Integer id) throws RentexpresException;
+	public ReservationStatusDTO findById(Integer id) throws RentexpresException;
 
-	public List<EstadoReservaDTO> findAll() throws RentexpresException;
+	public List<ReservationStatusDTO> findAll() throws RentexpresException;
 }

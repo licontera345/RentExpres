@@ -8,7 +8,7 @@ import com.pinguela.rentexpres.dao.DireccionDAO;
 import com.pinguela.rentexpres.dao.impl.DireccionDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.DireccionDTO;
+import com.pinguela.rentexpres.model.AddressDTO;
 import com.pinguela.rentexpres.service.DireccionService;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -22,9 +22,9 @@ public class DireccionServiceImpl implements DireccionService {
     }
 
     @Override
-    public DireccionDTO findById(Integer id) throws RentexpresException {
+    public AddressDTO findById(Integer id) throws RentexpresException {
         Connection connection = null;
-        DireccionDTO direccion = null;
+        AddressDTO direccion = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
@@ -42,7 +42,7 @@ public class DireccionServiceImpl implements DireccionService {
     }
 
     @Override
-    public boolean create(DireccionDTO direccion) throws RentexpresException {
+    public boolean create(AddressDTO direccion) throws RentexpresException {
         Connection connection = null;
         boolean creado = false;
         try {
@@ -67,7 +67,7 @@ public class DireccionServiceImpl implements DireccionService {
     }
 
     @Override
-    public boolean update(DireccionDTO direccion) throws RentexpresException {
+    public boolean update(AddressDTO direccion) throws RentexpresException {
         Connection connection = null;
         boolean actualizado = false;
         try {
@@ -92,7 +92,7 @@ public class DireccionServiceImpl implements DireccionService {
     }
 
     @Override
-    public boolean delete(DireccionDTO direccion) throws RentexpresException {
+    public boolean delete(AddressDTO direccion) throws RentexpresException {
         Connection connection = null;
         boolean eliminado = false;
         try {

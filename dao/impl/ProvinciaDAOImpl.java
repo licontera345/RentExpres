@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.pinguela.rentexpres.dao.ProvinciaDAO;
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.ProvinciaDTO;
+import com.pinguela.rentexpres.model.ProvinceDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class ProvinciaDAOImpl implements ProvinciaDAO {
@@ -19,8 +19,8 @@ public class ProvinciaDAOImpl implements ProvinciaDAO {
 	private static final Logger logger = LogManager.getLogger(ProvinciaDAOImpl.class);
 
 	@Override
-	public ProvinciaDTO findById(Connection connection, Integer id) throws DataException {
-		ProvinciaDTO prov = null;
+	public ProvinceDTO findById(Connection connection, Integer id) throws DataException {
+		ProvinceDTO prov = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -42,8 +42,8 @@ public class ProvinciaDAOImpl implements ProvinciaDAO {
 	}
 
 	@Override
-	public List<ProvinciaDTO> findAll(Connection connection) throws DataException {
-		List<ProvinciaDTO> lista = new ArrayList<>();
+	public List<ProvinceDTO> findAll(Connection connection) throws DataException {
+		List<ProvinceDTO> lista = new ArrayList<>();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -64,7 +64,7 @@ public class ProvinciaDAOImpl implements ProvinciaDAO {
 	}
 
 	@Override
-	public boolean create(Connection connection, ProvinciaDTO provincia) throws DataException {
+	public boolean create(Connection connection, ProvinceDTO provincia) throws DataException {
 		if (provincia == null) {
 			logger.warn("create llamado con Provincia nula.");
 			return false;
@@ -93,7 +93,7 @@ public class ProvinciaDAOImpl implements ProvinciaDAO {
 	}
 
 	@Override
-	public boolean update(Connection connection, ProvinciaDTO provincia) throws DataException {
+	public boolean update(Connection connection, ProvinceDTO provincia) throws DataException {
 		if (provincia == null || provincia.getId() == null) {
 			logger.warn("update llamado con Provincia nula o sin id.");
 			return false;
@@ -118,7 +118,7 @@ public class ProvinciaDAOImpl implements ProvinciaDAO {
 	}
 
 	@Override
-	public boolean delete(Connection connection, ProvinciaDTO provincia) throws DataException {
+	public boolean delete(Connection connection, ProvinceDTO provincia) throws DataException {
 		if (provincia == null || provincia.getId() == null) {
 			logger.warn("delete llamado con Provincia nula o sin id.");
 			return false;
@@ -141,7 +141,7 @@ public class ProvinciaDAOImpl implements ProvinciaDAO {
 		return false;
 	}
 
-	private void setProvinciaParameters(PreparedStatement ps, ProvinciaDTO provincia, boolean isUpdate)
+	private void setProvinciaParameters(PreparedStatement ps, ProvinceDTO provincia, boolean isUpdate)
 			throws SQLException {
 		ps.setString(1, provincia.getNombre());
 		if (isUpdate) {
@@ -149,8 +149,8 @@ public class ProvinciaDAOImpl implements ProvinciaDAO {
 		}
 	}
 
-	private ProvinciaDTO loadProvincia(ResultSet rs) throws SQLException {
-		ProvinciaDTO p = new ProvinciaDTO();
+	private ProvinceDTO loadProvincia(ResultSet rs) throws SQLException {
+		ProvinceDTO p = new ProvinceDTO();
 		p.setId(rs.getInt("id_provincia"));
 		p.setNombre(rs.getString("nombre_provincia"));
 		return p;

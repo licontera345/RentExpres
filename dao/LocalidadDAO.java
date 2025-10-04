@@ -4,20 +4,20 @@ import java.sql.Connection;
 import java.util.List;
 
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.LocalidadDTO;
+import com.pinguela.rentexpres.model.CityDTO;
 
 public interface LocalidadDAO {
 
-	public LocalidadDTO findById(Connection connection, Integer id) throws DataException;
+	public CityDTO findById(Connection connection, Integer id) throws DataException;
 
-	List<LocalidadDTO> findAll(Connection connection) throws DataException;
+	List<CityDTO> findAll(Connection connection) throws DataException;
 
-	List<LocalidadDTO> findByProvinciaId(Connection c, Integer idProvincia) throws DataException;
+	List<CityDTO> findByProvinciaId(Connection c, Integer idProvincia) throws DataException;
 
-	public boolean create(Connection connection, LocalidadDTO localidad) throws DataException;
+	public boolean create(Connection connection, CityDTO localidad) throws DataException;
 
-	public boolean update(Connection connection, LocalidadDTO localidad) throws DataException;
+	public boolean update(Connection connection, CityDTO localidad) throws DataException;
 
-	public boolean delete(Connection connection, LocalidadDTO localidad) throws DataException;
+	public boolean delete(Connection connection, CityDTO localidad) throws DataException;
 
 }

@@ -7,8 +7,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.pinguela.rentexpres.dao.ClienteDAO;
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.ClienteDTO;
-import com.pinguela.rentexpres.model.ClienteCriteria;
+import com.pinguela.rentexpres.model.CustomerDTO;
+import com.pinguela.rentexpres.model.CustomerCriteria;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -24,7 +24,7 @@ public class ClienteDAOImpl implements ClienteDAO {
                     + "LEFT JOIN provincia p ON l.id_provincia = p.id_provincia";
 
 	@Override
-	public ClienteDTO findById(Connection connection, Integer id) throws DataException {
+	public CustomerDTO findById(Connection connection, Integer id) throws DataException {
 		if (id == null) {
 			logger.warn("findById null id.");
 			return null;
@@ -50,8 +50,8 @@ public class ClienteDAOImpl implements ClienteDAO {
 	}
 
 	@Override
-	public List<ClienteDTO> findAll(Connection connection) throws DataException {
-		List<ClienteDTO> lista = new ArrayList<>();
+	public List<CustomerDTO> findAll(Connection connection) throws DataException {
+		List<CustomerDTO> lista = new ArrayList<>();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -71,7 +71,7 @@ public class ClienteDAOImpl implements ClienteDAO {
 	}
 
 	@Override
-	public boolean create(Connection connection, ClienteDTO cliente) throws DataException {
+	public boolean create(Connection connection, CustomerDTO cliente) throws DataException {
 		if (cliente == null) {
 			logger.warn("create llamada con Cliente nulo.");
 			return false;
@@ -101,7 +101,7 @@ public class ClienteDAOImpl implements ClienteDAO {
 	}
 
 	@Override
-	public boolean update(Connection connection, ClienteDTO cliente) throws DataException {
+	public boolean update(Connection connection, CustomerDTO cliente) throws DataException {
 		if (cliente == null || cliente.getId() == null) {
 			logger.warn("update llamado con Cliente o id nulo.");
 			return false;
@@ -150,9 +150,9 @@ public class ClienteDAOImpl implements ClienteDAO {
 	}
 
 	@Override
-	public Results<ClienteDTO> findByCriteria(Connection connection, ClienteCriteria criteria) throws DataException {
-		Results<ClienteDTO> results = new Results<>();
-		List<ClienteDTO> lista = new ArrayList<>();
+	public Results<CustomerDTO> findByCriteria(Connection connection, CustomerCriteria criteria) throws DataException {
+		Results<CustomerDTO> results = new Results<>();
+		List<CustomerDTO> lista = new ArrayList<>();
 		int pageNumber = criteria.getPageNumber();
 		int pageSize = criteria.getPageSize();
 		int offset = (pageNumber - 1) * pageSize;
@@ -237,7 +237,7 @@ public class ClienteDAOImpl implements ClienteDAO {
 			if (rs.absolute(offset + 1)) {
 				int count = 0;
 				do {
-					ClienteDTO dto = new ClienteDTO();
+					CustomerDTO dto = new CustomerDTO();
 					dto.setId(rs.getInt("id_cliente"));
 					dto.setNombre(rs.getString("nombre"));
 					dto.setApellido1(rs.getString("apellido1"));
@@ -271,8 +271,8 @@ public class ClienteDAOImpl implements ClienteDAO {
 		return results;
 	}
 
-	private ClienteDTO loadCliente(ResultSet rs) throws SQLException {
-		ClienteDTO c = new ClienteDTO();
+	private CustomerDTO loadCliente(ResultSet rs) throws SQLException {
+		CustomerDTO c = new CustomerDTO();
 		c.setId(rs.getInt("id_cliente"));
 		c.setNombre(rs.getString("nombre"));
 		c.setApellido1(rs.getString("apellido1"));
@@ -288,7 +288,7 @@ public class ClienteDAOImpl implements ClienteDAO {
 		return c;
 	}
 
-	private void setClienteParameters(PreparedStatement ps, ClienteDTO cliente, boolean isUpdate) throws SQLException {
+	private void setClienteParameters(PreparedStatement ps, CustomerDTO cliente, boolean isUpdate) throws SQLException {
 		ps.setString(1, cliente.getNombre());
 		ps.setString(2, cliente.getApellido1());
 		ps.setString(3, cliente.getApellido2());

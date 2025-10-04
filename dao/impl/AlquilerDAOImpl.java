@@ -8,8 +8,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.dao.AlquilerDAO;
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.AlquilerDTO;
-import com.pinguela.rentexpres.model.AlquilerCriteria;
+import com.pinguela.rentexpres.model.RentalDTO;
+import com.pinguela.rentexpres.model.RentalCriteria;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
@@ -27,7 +27,7 @@ public class AlquilerDAOImpl implements AlquilerDAO {
 			+ "INNER JOIN cliente c ON r.id_cliente = c.id_cliente";
 
 	@Override
-	public AlquilerDTO findById(Connection connection, Integer id) throws DataException {
+	public RentalDTO findById(Connection connection, Integer id) throws DataException {
 		if (id == null) {
 			logger.warn("findById de Alquiler llamado con id nulo.");
 			return null;
@@ -51,8 +51,8 @@ public class AlquilerDAOImpl implements AlquilerDAO {
 	}
 
 	@Override
-	public List<AlquilerDTO> findAll(Connection connection) throws DataException {
-		List<AlquilerDTO> lista = new ArrayList<>();
+	public List<RentalDTO> findAll(Connection connection) throws DataException {
+		List<RentalDTO> lista = new ArrayList<>();
 		String sql = SELECT_BASE + " ORDER BY a.fecha_inicio_efectivo DESC";
 		try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
@@ -67,7 +67,7 @@ public class AlquilerDAOImpl implements AlquilerDAO {
 	}
 
 	@Override
-	public boolean create(Connection connection, AlquilerDTO alquiler) throws DataException {
+	public boolean create(Connection connection, RentalDTO alquiler) throws DataException {
 		if (alquiler == null) {
 			logger.warn("create null Alquiler.");
 			return false;
@@ -93,7 +93,7 @@ public class AlquilerDAOImpl implements AlquilerDAO {
 	}
 
 	@Override
-	public boolean update(Connection connection, AlquilerDTO alquiler) throws DataException {
+	public boolean update(Connection connection, RentalDTO alquiler) throws DataException {
 		if (alquiler == null || alquiler.getId() == null) {
 			logger.warn("update null Alquiler o id nulo.");
 			return false;
@@ -134,9 +134,9 @@ public class AlquilerDAOImpl implements AlquilerDAO {
 	}
 
 	@Override
-	public Results<AlquilerDTO> findByCriteria(Connection connection, AlquilerCriteria criteria) throws DataException {
-		Results<AlquilerDTO> results = new Results<>();
-		List<AlquilerDTO> lista = new ArrayList<>();
+	public Results<RentalDTO> findByCriteria(Connection connection, RentalCriteria criteria) throws DataException {
+		Results<RentalDTO> results = new Results<>();
+		List<RentalDTO> lista = new ArrayList<>();
 		int pageNumber = criteria.getPageNumber();
 		int pageSize = criteria.getPageSize();
 		int offset = (pageNumber - 1) * pageSize;
@@ -244,7 +244,7 @@ public class AlquilerDAOImpl implements AlquilerDAO {
 		return results;
 	}
 
-	private void setAlquilerParameters(PreparedStatement ps, AlquilerDTO alquiler, boolean isUpdate)
+	private void setAlquilerParameters(PreparedStatement ps, RentalDTO alquiler, boolean isUpdate)
 			throws SQLException {
 		if (!isUpdate) {
 			ps.setInt(1, alquiler.getIdReserva());
@@ -265,8 +265,8 @@ public class AlquilerDAOImpl implements AlquilerDAO {
 		}
 	}
 
-	private AlquilerDTO loadAlquiler(ResultSet rs) throws SQLException {
-		AlquilerDTO dto = new AlquilerDTO();
+	private RentalDTO loadAlquiler(ResultSet rs) throws SQLException {
+		RentalDTO dto = new RentalDTO();
 		dto.setId(rs.getInt("id_alquiler"));
 		dto.setIdReserva(rs.getInt("id_reserva"));
 		dto.setFechaInicioEfectivo(rs.getString("fecha_inicio_efectivo"));

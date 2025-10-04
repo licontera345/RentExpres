@@ -4,12 +4,12 @@ package com.pinguela.rentexpres.service;
 import java.util.List;
 
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.EstadoVehiculoDTO;
+import com.pinguela.rentexpres.model.VehicleStatusDTO;
 
 public interface EstadoVehiculoService {
 
-    public EstadoVehiculoDTO findById(Integer id) throws RentexpresException;
+    public VehicleStatusDTO findById(Integer id) throws RentexpresException;
 
-	public List<EstadoVehiculoDTO> findAll() throws RentexpresException;
+	public List<VehicleStatusDTO> findAll() throws RentexpresException;
 
 }

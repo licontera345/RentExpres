@@ -11,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.dao.EstadoAlquilerDAO;
-import com.pinguela.rentexpres.model.EstadoAlquilerDTO;
+import com.pinguela.rentexpres.model.RentalStatusDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class EstadoAlquilerDAOImpl implements EstadoAlquilerDAO {
@@ -20,8 +20,8 @@ public class EstadoAlquilerDAOImpl implements EstadoAlquilerDAO {
 
 
     @Override
-    public EstadoAlquilerDTO findById(Connection connection, Integer id) {
-        EstadoAlquilerDTO ea = null;
+    public RentalStatusDTO findById(Connection connection, Integer id) {
+        RentalStatusDTO ea = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
 
@@ -42,8 +42,8 @@ public class EstadoAlquilerDAOImpl implements EstadoAlquilerDAO {
         return ea;
     }
     @Override
-    public List<EstadoAlquilerDTO> findAll(Connection connection) {
-        List<EstadoAlquilerDTO> lista = new ArrayList<>();
+    public List<RentalStatusDTO> findAll(Connection connection) {
+        List<RentalStatusDTO> lista = new ArrayList<>();
 
         try (PreparedStatement ps = connection.prepareStatement("SELECT id_estado_alquiler, nombre_estado FROM estado_alquiler")) {
             try (ResultSet rs = ps.executeQuery()) {
@@ -58,8 +58,8 @@ public class EstadoAlquilerDAOImpl implements EstadoAlquilerDAO {
         return lista;
     }
 
-    private EstadoAlquilerDTO loadEstadoAlquiler(ResultSet rs) throws SQLException {
-        EstadoAlquilerDTO ea = new EstadoAlquilerDTO();
+    private RentalStatusDTO loadEstadoAlquiler(ResultSet rs) throws SQLException {
+        RentalStatusDTO ea = new RentalStatusDTO();
         ea.setId(rs.getInt("id_estado_alquiler"));
         ea.setNombreEstado(rs.getString("nombre_estado"));
 

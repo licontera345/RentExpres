@@ -9,7 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.pinguela.rentexpres.dao.DireccionDAO;
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.DireccionDTO;
+import com.pinguela.rentexpres.model.AddressDTO;
 import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class DireccionDAOImpl implements DireccionDAO {
@@ -17,8 +17,8 @@ public class DireccionDAOImpl implements DireccionDAO {
 	private static final Logger logger = LogManager.getLogger(DireccionDAOImpl.class);
 
 	@Override
-	public DireccionDTO findById(Connection connection, Integer id) throws DataException {
-		DireccionDTO d = null;
+	public AddressDTO findById(Connection connection, Integer id) throws DataException {
+		AddressDTO d = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -43,7 +43,7 @@ public class DireccionDAOImpl implements DireccionDAO {
 	}
 
 	@Override
-	public boolean create(Connection connection, DireccionDTO direccion) throws DataException {
+	public boolean create(Connection connection, AddressDTO direccion) throws DataException {
 		if (direccion == null) {
 			logger.warn("create llamado con Direccion nula.");
 			return false;
@@ -72,7 +72,7 @@ public class DireccionDAOImpl implements DireccionDAO {
 	}
 
 	@Override
-	public boolean update(Connection connection, DireccionDTO direccion) throws DataException {
+	public boolean update(Connection connection, AddressDTO direccion) throws DataException {
 		if (direccion == null || direccion.getId() == null) {
 			logger.warn("update llamado con dirección nula o sin id.");
 			return false;
@@ -97,7 +97,7 @@ public class DireccionDAOImpl implements DireccionDAO {
 	}
 
 	@Override
-	public boolean delete(Connection connection, DireccionDTO direccion, Integer id) throws DataException {
+	public boolean delete(Connection connection, AddressDTO direccion, Integer id) throws DataException {
 		if (id == null) {
 			logger.warn("delete llamado con id nulo.");
 			return false;
@@ -120,8 +120,8 @@ public class DireccionDAOImpl implements DireccionDAO {
 		return false;
 	}
 
-	private DireccionDTO loadDireccion(ResultSet rs) throws SQLException {
-		DireccionDTO d = new DireccionDTO();
+	private AddressDTO loadDireccion(ResultSet rs) throws SQLException {
+		AddressDTO d = new AddressDTO();
 		d.setId(rs.getInt("id_direccion"));
 		d.setIdLocalidad(rs.getInt("id_localidad"));
 		d.setCalle(rs.getString("calle"));
@@ -131,7 +131,7 @@ public class DireccionDAOImpl implements DireccionDAO {
 		return d;
 	}
 
-	private void setDireccionParameters(PreparedStatement ps, DireccionDTO direccion, boolean isUpdate)
+	private void setDireccionParameters(PreparedStatement ps, AddressDTO direccion, boolean isUpdate)
 			throws SQLException {
 		ps.setInt(1, direccion.getIdLocalidad());
 		ps.setString(2, direccion.getCalle());

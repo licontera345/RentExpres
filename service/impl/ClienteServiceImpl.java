@@ -9,8 +9,8 @@ import com.pinguela.rentexpres.dao.ClienteDAO;
 import com.pinguela.rentexpres.dao.impl.ClienteDAOImpl;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.ClienteDTO;
-import com.pinguela.rentexpres.model.ClienteCriteria;
+import com.pinguela.rentexpres.model.CustomerDTO;
+import com.pinguela.rentexpres.model.CustomerCriteria;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.service.ClienteService;
 import com.pinguela.rentexpres.util.JDBCUtils;
@@ -25,9 +25,9 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public ClienteDTO findById(Integer id) throws RentexpresException {
+    public CustomerDTO findById(Integer id) throws RentexpresException {
         Connection connection = null;
-        ClienteDTO cliente = null;
+        CustomerDTO cliente = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
@@ -45,9 +45,9 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public List<ClienteDTO> findAll() throws RentexpresException {
+    public List<CustomerDTO> findAll() throws RentexpresException {
         Connection connection = null;
-        List<ClienteDTO> lista = null;
+        List<CustomerDTO> lista = null;
         try {
             connection = JDBCUtils.getConnection();
             JDBCUtils.beginTransaction(connection);
@@ -65,7 +65,7 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public boolean create(ClienteDTO cliente) throws RentexpresException {
+    public boolean create(CustomerDTO cliente) throws RentexpresException {
         Connection connection = null;
         boolean creado = false;
         try {
@@ -90,7 +90,7 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public boolean update(ClienteDTO cliente) throws RentexpresException {
+    public boolean update(CustomerDTO cliente) throws RentexpresException {
         Connection connection = null;
         boolean actualizado = false;
         try {
@@ -140,8 +140,8 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public Results<ClienteDTO> findByCriteria(ClienteCriteria criteria) throws RentexpresException {
-        Results<ClienteDTO> results = null;
+    public Results<CustomerDTO> findByCriteria(CustomerCriteria criteria) throws RentexpresException {
+        Results<CustomerDTO> results = null;
         Connection connection = null;
         try {
             connection = JDBCUtils.getConnection();

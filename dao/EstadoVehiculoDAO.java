@@ -4,12 +4,12 @@ import java.sql.Connection;
 import java.util.List;
 
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.EstadoVehiculoDTO;
+import com.pinguela.rentexpres.model.VehicleStatusDTO;
 
 public interface EstadoVehiculoDAO {
 
-	public EstadoVehiculoDTO findById(Connection connection, Integer id)throws DataException;
+	public VehicleStatusDTO findById(Connection connection, Integer id)throws DataException;
 
-	public List<EstadoVehiculoDTO> findAll(Connection connection)throws DataException;
+	public List<VehicleStatusDTO> findAll(Connection connection)throws DataException;
 
 }
