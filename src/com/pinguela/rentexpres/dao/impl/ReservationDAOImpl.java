@@ -9,7 +9,10 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,461 +22,370 @@ import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.ReservationCriteria;
 import com.pinguela.rentexpres.model.ReservationDTO;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.util.JDBCUtils;
 
-/**
- * DAO implementation for the 'reservation' table. - Java 1.8 compatible - Uses
- * LocalDateTime for date-time fields - Includes full JOINs (vehicle, user/user,
- * employee, reservation_status, headquarters) - Logs include the current method
- * name
- */
 public class ReservationDAOImpl implements ReservationDAO {
 
-	private static final Logger logger = LogManager.getLogger(ReservationDAOImpl.class);
+        private static final Logger logger = LogManager.getLogger(ReservationDAOImpl.class);
 
-	private static final String RESERVATION_SELECT_BASE = "SELECT r.reservation_id, r.vehicle_id, r.user_id, r.employee_id, r.reservation_status_id, "
-			+ "       r.pickup_headquarters_id, r.return_headquarters_id, "
-			+ "       r.start_date, r.end_date, r.created_at, r.updated_at, " +
-			// Useful aliases from joins (por si tus DTOs los usan después)
-			"       v.brand AS vehicle_brand, v.model AS vehicle_model, v.license_plate AS vehicle_plate, "
-			+ "       u.first_name AS user_first_name, u.last_name AS user_last_name, u.phone AS user_phone, "
-			+ "       e.first_name AS employee_first_name, e.last_name AS employee_last_name, "
-			+ "       rs.status_name AS reservation_status_name, "
-			+ "       h1.name AS pickup_headquarters_name, h2.name AS return_headquarters_name " + "FROM reservation r "
-			+ "INNER JOIN vehicle v ON r.vehicle_id = v.vehicle_id " + "INNER JOIN user u ON r.user_id = u.user_id "
-			+ "LEFT JOIN employee e ON r.employee_id = e.employee_id " + // puede ser null
-			"INNER JOIN reservation_status rs ON r.reservation_status_id = rs.reservation_status_id "
-			+ "INNER JOIN headquarters h1 ON r.pickup_headquarters_id = h1.headquarters_id "
-			+ "INNER JOIN headquarters h2 ON r.return_headquarters_id = h2.headquarters_id";
+        private static final String BASE_SELECT = String.join(" ",
+                        "SELECT r.reservation_id, r.vehicle_id, r.user_id, r.employee_id,",
+                        "       r.reservation_status_id, r.pickup_headquarters_id, r.return_headquarters_id,",
+                        "       r.start_date, r.end_date, r.created_at, r.updated_at",
+                        "FROM reservation r");
 
-	// ============================================================
-	// == FIND BY ID ==============================================
-	// ============================================================
+        private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 
-	@Override
-	public ReservationDTO findById(Connection connection, Integer id) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		if (id == null) {
-			logger.warn("[{}] called with null id.", method);
-			return null;
-		}
+        private static Map<String, String> buildOrderColumns() {
+                Map<String, String> map = new HashMap<String, String>();
+                map.put("reservation_id", "r.reservation_id");
+                map.put("start_date", "r.start_date");
+                map.put("end_date", "r.end_date");
+                map.put("created_at", "r.created_at");
+                map.put("updated_at", "r.updated_at");
+                return map;
+        }
 
-		String sql = RESERVATION_SELECT_BASE + " WHERE r.reservation_id = ?";
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) {
-					logger.info("[{}] Reservation found, id: {}", method, id);
-					return loadReservation(rs);
-				} else {
-					logger.warn("[{}] No reservation found with id: {}", method, id);
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error finding reservation by ID: {}", method, id, e);
-			throw new DataException("Error finding reservation by ID: " + id, e);
-		}
-		return null;
-	}
+        @Override
+        public ReservationDTO findById(Connection connection, Integer id) throws DataException {
+                final String method = "findById";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return null;
+                }
 
-	// ============================================================
-	// == FIND ALL ================================================
-	// ============================================================
+                String sql = BASE_SELECT + " WHERE r.reservation_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        try (ResultSet rs = ps.executeQuery()) {
+                                if (rs.next()) {
+                                        logger.info("[{}] Reservation found with id {}", method, id);
+                                        return toReservationDTO(rs);
+                                }
+                        }
+                        logger.warn("[{}] No reservation found with id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error finding reservation id {}", method, id, e);
+                        throw new DataException("Error finding reservation by id", e);
+                }
+                return null;
+        }
 
-	@Override
-	public List<ReservationDTO> findAll(Connection connection) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		List<ReservationDTO> list = new ArrayList<>();
+        @Override
+        public List<ReservationDTO> findAll(Connection connection) throws DataException {
+                final String method = "findAll";
+                List<ReservationDTO> reservations = new ArrayList<ReservationDTO>();
+                String sql = BASE_SELECT + " ORDER BY r.start_date DESC";
+                try (PreparedStatement ps = connection.prepareStatement(sql);
+                                ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                                reservations.add(toReservationDTO(rs));
+                        }
+                        logger.info("[{}] Retrieved {} reservations", method, Integer.valueOf(reservations.size()));
+                } catch (SQLException e) {
+                        logger.error("[{}] Error retrieving reservations", method, e);
+                        throw new DataException("Error retrieving reservations", e);
+                }
+                return reservations;
+        }
 
-		String sql = RESERVATION_SELECT_BASE + " ORDER BY r.start_date DESC";
-		try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-				list.add(loadReservation(rs));
-			}
-			logger.info("[{}] Total reservations found: {}", method, list.size());
-		} catch (SQLException e) {
-			logger.error("[{}] Error listing reservations", method, e);
-			throw new DataException("Error listing reservations", e);
-		}
-		return list;
-	}
+        @Override
+        public boolean create(Connection connection, ReservationDTO reservation) throws DataException {
+                final String method = "create";
+                if (reservation == null) {
+                        logger.warn("[{}] called with null reservation", method);
+                        return false;
+                }
 
-	// ============================================================
-	// == CREATE ==================================================
-	// ============================================================
+                String sql = "INSERT INTO reservation (vehicle_id, user_id, employee_id, reservation_status_id,"
+                                + " pickup_headquarters_id, return_headquarters_id, start_date, end_date, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
-	@Override
-	public boolean create(Connection connection, ReservationDTO r) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		if (r == null) {
-			logger.warn("[{}] called with null reservation.", method);
-			return false;
-		}
+                try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                        bindWrite(ps, reservation, false);
+                        if (ps.executeUpdate() > 0) {
+                                try (ResultSet keys = ps.getGeneratedKeys()) {
+                                        if (keys.next()) {
+                                                reservation.setReservationId(Integer.valueOf(keys.getInt(1)));
+                                        }
+                                }
+                                logger.info("[{}] Created reservation id {}", method, reservation.getReservationId());
+                                return true;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error creating reservation", method, e);
+                        throw new DataException("Error creating reservation", e);
+                }
+                return false;
+        }
 
-		String sql = "INSERT INTO reservation " + "(vehicle_id, user_id, employee_id, reservation_status_id, "
-				+ " pickup_headquarters_id, return_headquarters_id, start_date, end_date) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        @Override
+        public boolean update(Connection connection, ReservationDTO reservation) throws DataException {
+                final String method = "update";
+                if (reservation == null || reservation.getReservationId() == null) {
+                        logger.warn("[{}] called with null reservation or id", method);
+                        return false;
+                }
 
-		try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-			setReservationParameters(ps, r, false);
-			if (ps.executeUpdate() > 0) {
-				try (ResultSet gen = ps.getGeneratedKeys()) {
-					if (gen.next()) {
-						r.setReservationId(gen.getInt(1));
-					}
-				}
-				logger.info("[{}] Reservation created successfully. ID: {}", method, r.getReservationId());
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error creating reservation", method, e);
-			throw new DataException("Error creating reservation", e);
-		}
-		return false;
-	}
+                String sql = "UPDATE reservation SET vehicle_id = ?, user_id = ?, employee_id = ?, reservation_status_id = ?,"
+                                + " pickup_headquarters_id = ?, return_headquarters_id = ?, start_date = ?, end_date = ?,"
+                                + " updated_at = NOW() WHERE reservation_id = ?";
 
-	// ============================================================
-	// == UPDATE ==================================================
-	// ============================================================
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        bindWrite(ps, reservation, true);
+                        int updated = ps.executeUpdate();
+                        if (updated > 0) {
+                                logger.info("[{}] Updated reservation id {}", method, reservation.getReservationId());
+                                return true;
+                        }
+                        logger.warn("[{}] No reservation updated for id {}", method, reservation.getReservationId());
+                } catch (SQLException e) {
+                        logger.error("[{}] Error updating reservation id {}", method, reservation.getReservationId(), e);
+                        throw new DataException("Error updating reservation", e);
+                }
+                return false;
+        }
 
-	@Override
-	public boolean update(Connection connection, ReservationDTO r) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		if (r == null || r.getReservationId() == null) {
-			logger.warn("[{}] called with null reservation or id.", method);
-			return false;
-		}
+        @Override
+        public boolean delete(Connection connection, Integer id) throws DataException {
+                final String method = "delete";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return false;
+                }
+                String sql = "DELETE FROM reservation WHERE reservation_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        int rows = ps.executeUpdate();
+                        if (rows > 0) {
+                                logger.info("[{}] Reservation {} deleted", method, id);
+                                return true;
+                        }
+                        logger.warn("[{}] No reservation deleted for id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error deleting reservation id {}", method, id, e);
+                        throw new DataException("Error deleting reservation", e);
+                }
+                return false;
+        }
 
-		String sql = "UPDATE reservation SET vehicle_id = ?, user_id = ?, employee_id = ?, reservation_status_id = ?, "
-				+ "pickup_headquarters_id = ?, return_headquarters_id = ?, start_date = ?, end_date = ? "
-				+ "WHERE reservation_id = ?";
+        @Override
+        public Results<ReservationDTO> findByCriteria(Connection connection, ReservationCriteria criteria) throws DataException {
+                final String method = "findByCriteria";
+                if (criteria == null) {
+                        criteria = new ReservationCriteria();
+                }
+                criteria.normalize();
 
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			setReservationParameters(ps, r, true);
-			if (ps.executeUpdate() > 0) {
-				logger.info("[{}] Reservation updated successfully. ID: {}", method, r.getReservationId());
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error updating reservation", method, e);
-			throw new DataException("Error updating reservation", e);
-		}
-		return false;
-	}
+                Results<ReservationDTO> results = new Results<ReservationDTO>();
+                List<Object> filters = new ArrayList<Object>();
 
-	// ============================================================
-	// == DELETE ==================================================
-	// ============================================================
+                StringBuilder from = new StringBuilder(BASE_SELECT.substring(BASE_SELECT.indexOf("FROM")));
+                StringBuilder where = new StringBuilder(" WHERE 1=1");
 
-	@Override
-	public boolean delete(Connection connection, Integer id) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		if (id == null) {
-			logger.warn("[{}] called with null id.", method);
-			return false;
-		}
+                if (criteria.getReservationId() != null) {
+                        where.append(" AND r.reservation_id = ?");
+                        filters.add(criteria.getReservationId());
+                }
+                if (criteria.getVehicleId() != null) {
+                        where.append(" AND r.vehicle_id = ?");
+                        filters.add(criteria.getVehicleId());
+                }
+                if (criteria.getUserId() != null) {
+                        where.append(" AND r.user_id = ?");
+                        filters.add(criteria.getUserId());
+                }
+                if (criteria.getEmployeeId() != null) {
+                        where.append(" AND r.employee_id = ?");
+                        filters.add(criteria.getEmployeeId());
+                }
+                if (criteria.getReservationStatusId() != null) {
+                        where.append(" AND r.reservation_status_id = ?");
+                        filters.add(criteria.getReservationStatusId());
+                }
+                if (criteria.getPickupHeadquartersId() != null) {
+                        where.append(" AND r.pickup_headquarters_id = ?");
+                        filters.add(criteria.getPickupHeadquartersId());
+                }
+                if (criteria.getReturnHeadquartersId() != null) {
+                        where.append(" AND r.return_headquarters_id = ?");
+                        filters.add(criteria.getReturnHeadquartersId());
+                }
+                if (criteria.getStartDateFrom() != null) {
+                        where.append(" AND r.start_date >= ?");
+                        filters.add(criteria.getStartDateFrom());
+                }
+                if (criteria.getStartDateTo() != null) {
+                        where.append(" AND r.start_date <= ?");
+                        filters.add(criteria.getStartDateTo());
+                }
+                if (criteria.getEndDateFrom() != null) {
+                        where.append(" AND r.end_date >= ?");
+                        filters.add(criteria.getEndDateFrom());
+                }
+                if (criteria.getEndDateTo() != null) {
+                        where.append(" AND r.end_date <= ?");
+                        filters.add(criteria.getEndDateTo());
+                }
+                if (criteria.getCreatedAtFrom() != null) {
+                        where.append(" AND r.created_at >= ?");
+                        filters.add(criteria.getCreatedAtFrom());
+                }
+                if (criteria.getCreatedAtTo() != null) {
+                        where.append(" AND r.created_at <= ?");
+                        filters.add(criteria.getCreatedAtTo());
+                }
+                if (criteria.getUpdatedAtFrom() != null) {
+                        where.append(" AND r.updated_at >= ?");
+                        filters.add(criteria.getUpdatedAtFrom());
+                }
+                if (criteria.getUpdatedAtTo() != null) {
+                        where.append(" AND r.updated_at <= ?");
+                        filters.add(criteria.getUpdatedAtTo());
+                }
 
-		String sql = "DELETE FROM reservation WHERE reservation_id = ?";
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			if (ps.executeUpdate() > 0) {
-				logger.info("[{}] Reservation deleted. ID: {}", method, id);
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error deleting reservation ID: {}", method, id, e);
-			throw new DataException("Error deleting reservation ID: " + id, e);
-		}
-		return false;
-	}
+                String countSql = "SELECT COUNT(1) " + from.toString() + where.toString();
 
-	// ============================================================
-	// == FIND BY CRITERIA ========================================
-	// ============================================================
+                int page = criteria.getSafePage();
+                int pageSize = criteria.getSafePageSize();
+                int total;
 
-	@Override
-	public Results<ReservationDTO> findByCriteria(Connection connection, ReservationCriteria c) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
+                try (PreparedStatement ps = connection.prepareStatement(countSql)) {
+                        bindFilters(ps, filters);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                total = rs.next() ? rs.getInt(1) : 0;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing reservation count", method, e);
+                        throw new DataException("Error executing reservation count", e);
+                }
 
-		Results<ReservationDTO> results = new Results<>();
-		List<ReservationDTO> list = new ArrayList<>();
+                if (total == 0) {
+                        results.setItems(Collections.<ReservationDTO>emptyList());
+                        results.setPage(page);
+                        results.setPageSize(pageSize);
+                        results.setTotal(total);
+                        results.normalize();
+                        return results;
+                }
 
-		int page = c.getPageNumber() == null || c.getPageNumber() <= 0 ? 1 : c.getPageNumber();
-		int size = c.getPageSize() == null || c.getPageSize() <= 0 ? 25 : c.getPageSize();
-		int offset = (page - 1) * size;
+                int totalPages = (total + pageSize - 1) / pageSize;
+                if (page > totalPages) {
+                        page = totalPages;
+                }
+                int offset = (page - 1) * pageSize;
 
-		StringBuilder sql = new StringBuilder(RESERVATION_SELECT_BASE);
-		StringBuilder countSql = new StringBuilder("SELECT COUNT(*) " + "FROM reservation r "
-				+ "INNER JOIN vehicle v ON r.vehicle_id = v.vehicle_id " + "INNER JOIN user u ON r.user_id = u.user_id "
-				+ "LEFT JOIN employee e ON r.employee_id = e.employee_id "
-				+ "INNER JOIN reservation_status rs ON r.reservation_status_id = rs.reservation_status_id "
-				+ "INNER JOIN headquarters h1 ON r.pickup_headquarters_id = h1.headquarters_id "
-				+ "INNER JOIN headquarters h2 ON r.return_headquarters_id = h2.headquarters_id ");
+                String orderColumn = resolveOrderColumn(criteria.getOrderBy());
+                String direction = criteria.getSafeOrderDir();
 
-		sql.append(" WHERE 1=1 ");
-		countSql.append(" WHERE 1=1 ");
+                String selectSql = BASE_SELECT + where.toString() + " ORDER BY " + orderColumn + " " + direction
+                                + " LIMIT ? OFFSET ?";
 
-		// --- filtros exactos por ids ---
-		if (c.getReservationId() != null) {
-			sql.append(" AND r.reservation_id = ? ");
-			countSql.append(" AND r.reservation_id = ? ");
-		}
-		if (c.getVehicleId() != null) {
-			sql.append(" AND r.vehicle_id = ? ");
-			countSql.append(" AND r.vehicle_id = ? ");
-		}
-		if (c.getUserId() != null) {
-			sql.append(" AND r.user_id = ? ");
-			countSql.append(" AND r.user_id = ? ");
-		}
-		if (c.getEmployeeId() != null) {
-			sql.append(" AND r.employee_id = ? ");
-			countSql.append(" AND r.employee_id = ? ");
-		}
-		if (c.getReservationStatusId() != null) {
-			sql.append(" AND r.reservation_status_id = ? ");
-			countSql.append(" AND r.reservation_status_id = ? ");
-		}
-		if (c.getPickupHeadquartersId() != null) {
-			sql.append(" AND r.pickup_headquarters_id = ? ");
-			countSql.append(" AND r.pickup_headquarters_id = ? ");
-		}
-		if (c.getReturnHeadquartersId() != null) {
-			sql.append(" AND r.return_headquarters_id = ? ");
-			countSql.append(" AND r.return_headquarters_id = ? ");
-		}
+                List<ReservationDTO> items = new ArrayList<ReservationDTO>();
+                try (PreparedStatement ps = connection.prepareStatement(selectSql)) {
+                        int idx = bindFilters(ps, filters);
+                        ps.setInt(idx++, pageSize);
+                        ps.setInt(idx, offset);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                while (rs.next()) {
+                                        items.add(toReservationDTO(rs));
+                                }
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing reservation search", method, e);
+                        throw new DataException("Error executing reservation search", e);
+                }
 
-		// --- rangos de fechas ---
-		if (c.getStartDateFrom() != null) {
-			sql.append(" AND r.start_date >= ? ");
-			countSql.append(" AND r.start_date >= ? ");
-		}
-		if (c.getStartDateTo() != null) {
-			sql.append(" AND r.start_date <= ? ");
-			countSql.append(" AND r.start_date <= ? ");
-		}
+                results.setItems(items);
+                results.setPage(page);
+                results.setPageSize(pageSize);
+                results.setTotal(total);
+                results.normalize();
+                return results;
+        }
 
-		if (c.getEndDateFrom() != null) {
-			sql.append(" AND r.end_date >= ? ");
-			countSql.append(" AND r.end_date >= ? ");
-		}
-		if (c.getEndDateTo() != null) {
-			sql.append(" AND r.end_date <= ? ");
-			countSql.append(" AND r.end_date <= ? ");
-		}
+        @Override
+        public void updateStatus(Connection connection, Integer reservationId, Integer statusId) throws DataException {
+                final String method = "updateStatus";
+                if (reservationId == null || statusId == null) {
+                        logger.warn("[{}] called with null parameters", method);
+                        return;
+                }
+                String sql = "UPDATE reservation SET reservation_status_id = ?, updated_at = NOW() WHERE reservation_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, statusId.intValue());
+                        ps.setInt(2, reservationId.intValue());
+                        ps.executeUpdate();
+                } catch (SQLException e) {
+                        logger.error("[{}] Error updating reservation {} status", method, reservationId, e);
+                        throw new DataException("Error updating reservation status", e);
+                }
+        }
 
-		if (c.getCreatedAtFrom() != null) {
-			sql.append(" AND r.created_at >= ? ");
-			countSql.append(" AND r.created_at >= ? ");
-		}
-		if (c.getCreatedAtTo() != null) {
-			sql.append(" AND r.created_at <= ? ");
-			countSql.append(" AND r.created_at <= ? ");
-		}
+        private void bindWrite(PreparedStatement ps, ReservationDTO reservation, boolean isUpdate) throws SQLException {
+                int idx = 1;
+                ps.setInt(idx++, reservation.getVehicleId());
+                ps.setInt(idx++, reservation.getUserId());
+                if (reservation.getEmployeeId() == null) {
+                        ps.setNull(idx++, Types.INTEGER);
+                } else {
+                        ps.setInt(idx++, reservation.getEmployeeId().intValue());
+                }
+                ps.setInt(idx++, reservation.getReservationStatusId());
+                ps.setInt(idx++, reservation.getPickupHeadquartersId());
+                ps.setInt(idx++, reservation.getReturnHeadquartersId());
+                setTimestamp(ps, idx++, reservation.getStartDate());
+                setTimestamp(ps, idx++, reservation.getEndDate());
+                if (isUpdate) {
+                        ps.setInt(idx, reservation.getReservationId());
+                }
+        }
 
-		if (c.getUpdatedAtFrom() != null) {
-			sql.append(" AND r.updated_at >= ? ");
-			countSql.append(" AND r.updated_at >= ? ");
-		}
-		if (c.getUpdatedAtTo() != null) {
-			sql.append(" AND r.updated_at <= ? ");
-			countSql.append(" AND r.updated_at <= ? ");
-		}
+        private int bindFilters(PreparedStatement ps, List<Object> filters) throws SQLException {
+                int idx = 1;
+                for (Object value : filters) {
+                        if (value instanceof Integer) {
+                                ps.setInt(idx++, ((Integer) value).intValue());
+                        } else if (value instanceof LocalDateTime) {
+                                setTimestamp(ps, idx++, (LocalDateTime) value);
+                        } else {
+                                ps.setObject(idx++, value);
+                        }
+                }
+                return idx;
+        }
 
-		sql.append(" ORDER BY r.start_date DESC LIMIT ? OFFSET ?");
+        private String resolveOrderColumn(String requested) {
+                String key = requested == null ? null : requested;
+                String column = ORDER_BY_COLUMNS.get(key);
+                return column != null ? column : "r.reservation_id";
+        }
 
-		// --- consulta paginada ---
-		try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-			int idx = 1;
+        private static void setTimestamp(PreparedStatement ps, int index, LocalDateTime value) throws SQLException {
+                if (value == null) {
+                        ps.setNull(index, Types.TIMESTAMP);
+                } else {
+                        ps.setTimestamp(index, Timestamp.valueOf(value));
+                }
+        }
 
-			// ids exactos
-			if (c.getReservationId() != null)
-				ps.setInt(idx++, c.getReservationId());
-			if (c.getVehicleId() != null)
-				ps.setInt(idx++, c.getVehicleId());
-			if (c.getUserId() != null)
-				ps.setInt(idx++, c.getUserId());
-			if (c.getEmployeeId() != null)
-				ps.setInt(idx++, c.getEmployeeId());
-			if (c.getReservationStatusId() != null)
-				ps.setInt(idx++, c.getReservationStatusId());
-			if (c.getPickupHeadquartersId() != null)
-				ps.setInt(idx++, c.getPickupHeadquartersId());
-			if (c.getReturnHeadquartersId() != null)
-				ps.setInt(idx++, c.getReturnHeadquartersId());
-
-			// rangos
-			if (c.getStartDateFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getStartDateFrom()));
-			if (c.getStartDateTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getStartDateTo()));
-			if (c.getEndDateFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getEndDateFrom()));
-			if (c.getEndDateTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getEndDateTo()));
-			if (c.getCreatedAtFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getCreatedAtFrom()));
-			if (c.getCreatedAtTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getCreatedAtTo()));
-			if (c.getUpdatedAtFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getUpdatedAtFrom()));
-			if (c.getUpdatedAtTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getUpdatedAtTo()));
-
-			// paginación
-			ps.setInt(idx++, size);
-			ps.setInt(idx++, offset);
-
-			try (ResultSet rs = ps.executeQuery()) {
-				while (rs.next()) {
-					list.add(loadReservation(rs));
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error executing paginated reservation search", method, e);
-			throw new DataException("Error executing reservation search", e);
-		}
-
-		// --- consulta de conteo (mismo binding, sin LIMIT/OFFSET) ---
-		int totalRecords = 0;
-		try (PreparedStatement ps = connection.prepareStatement(countSql.toString())) {
-			int idx = 1;
-
-			if (c.getReservationId() != null)
-				ps.setInt(idx++, c.getReservationId());
-			if (c.getVehicleId() != null)
-				ps.setInt(idx++, c.getVehicleId());
-			if (c.getUserId() != null)
-				ps.setInt(idx++, c.getUserId());
-			if (c.getEmployeeId() != null)
-				ps.setInt(idx++, c.getEmployeeId());
-			if (c.getReservationStatusId() != null)
-				ps.setInt(idx++, c.getReservationStatusId());
-			if (c.getPickupHeadquartersId() != null)
-				ps.setInt(idx++, c.getPickupHeadquartersId());
-			if (c.getReturnHeadquartersId() != null)
-				ps.setInt(idx++, c.getReturnHeadquartersId());
-
-			if (c.getStartDateFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getStartDateFrom()));
-			if (c.getStartDateTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getStartDateTo()));
-			if (c.getEndDateFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getEndDateFrom()));
-			if (c.getEndDateTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getEndDateTo()));
-			if (c.getCreatedAtFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getCreatedAtFrom()));
-			if (c.getCreatedAtTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getCreatedAtTo()));
-			if (c.getUpdatedAtFrom() != null)
-				ps.setTimestamp(idx++, toTs(c.getUpdatedAtFrom()));
-			if (c.getUpdatedAtTo() != null)
-				ps.setTimestamp(idx++, toTs(c.getUpdatedAtTo()));
-
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next())
-					totalRecords = rs.getInt(1);
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error executing reservation total count", method, e);
-			throw new DataException("Error executing reservation total count", e);
-		}
-
-		results.setResults(list);
-		results.setPageNumber(page);
-		results.setPageSize(size);
-		results.setTotalRecords(totalRecords);
-
-		logger.info("[{}] findByCriteria reservation: page {} (size {}), total {}", method, page, size, totalRecords);
-		return results;
-	}
-
-	// ============================================================
-	// == PRIVATE HELPERS =========================================
-	// ============================================================
-
-	private static Timestamp toTs(LocalDateTime dt) {
-		return dt == null ? null : Timestamp.valueOf(dt);
-	}
-
-	private void setReservationParameters(PreparedStatement ps, ReservationDTO r, boolean isUpdate)
-			throws SQLException {
-		ps.setInt(1, r.getVehicleId());
-		ps.setInt(2, r.getUserId());
-		if (r.getEmployeeId() != null) {
-			ps.setInt(3, r.getEmployeeId());
-		} else {
-			ps.setNull(3, Types.INTEGER);
-		}
-		ps.setInt(4, r.getReservationStatusId());
-		ps.setInt(5, r.getPickupHeadquartersId());
-		ps.setInt(6, r.getReturnHeadquartersId());
-		ps.setTimestamp(7, toTs(r.getStartDate()));
-		ps.setTimestamp(8, toTs(r.getEndDate()));
-
-		if (isUpdate) {
-			ps.setInt(9, r.getReservationId());
-		}
-	}
-
-	private ReservationDTO loadReservation(ResultSet rs) throws SQLException {
-		ReservationDTO dto = new ReservationDTO();
-
-		dto.setReservationId(rs.getInt("reservation_id"));
-		dto.setVehicleId(rs.getInt("vehicle_id"));
-		dto.setUserId(rs.getInt("user_id"));
-
-		int empId = rs.getInt("employee_id");
-		dto.setEmployeeId(rs.wasNull() ? null : empId);
-
-		dto.setReservationStatusId(rs.getInt("reservation_status_id"));
-		dto.setPickupHeadquartersId(rs.getInt("pickup_headquarters_id"));
-		dto.setReturnHeadquartersId(rs.getInt("return_headquarters_id"));
-
-		Timestamp s = rs.getTimestamp("start_date");
-		if (s != null)
-			dto.setStartDate(s.toLocalDateTime());
-
-		Timestamp e = rs.getTimestamp("end_date");
-		if (e != null)
-			dto.setEndDate(e.toLocalDateTime());
-
-		Timestamp cAt = rs.getTimestamp("created_at");
-		if (cAt != null)
-			dto.setCreatedAt(cAt.toLocalDateTime());
-
-		Timestamp uAt = rs.getTimestamp("updated_at");
-		if (uAt != null)
-			dto.setUpdatedAt(uAt.toLocalDateTime());
-
-		// Nota: dejé los campos “relational objects (for joins)” del DTO como listas
-		// vacías
-		// (se suelen poblar desde servicios o mapeadores especializados).
-		// Aquí igualmente traemos todos los JOINs para futuras ampliaciones.
-
-		return dto;
-	}
-
-	@Override
-	public void updateStatus(Connection connection, Integer reservationId, Integer statusId) throws DataException {
-	    PreparedStatement ps = null;
-	    try {
-	        ps = connection.prepareStatement(
-	            "UPDATE reservation SET reservation_status_id = ? WHERE reservation_id = ?");
-	        ps.setInt(1, statusId);
-	        ps.setInt(2, reservationId);
-	        ps.executeUpdate();
-	    } catch (SQLException e) {
-	        throw new DataException("Error actualizando estado de la reserva", e);
-	    } finally {
-	        JDBCUtils.close(ps, null);
-	    }
-	}
+        private ReservationDTO toReservationDTO(ResultSet rs) throws SQLException {
+                ReservationDTO dto = new ReservationDTO();
+                dto.setReservationId(Integer.valueOf(rs.getInt("reservation_id")));
+                dto.setVehicleId(Integer.valueOf(rs.getInt("vehicle_id")));
+                dto.setUserId(Integer.valueOf(rs.getInt("user_id")));
+                int employee = rs.getInt("employee_id");
+                dto.setEmployeeId(rs.wasNull() ? null : Integer.valueOf(employee));
+                dto.setReservationStatusId(Integer.valueOf(rs.getInt("reservation_status_id")));
+                dto.setPickupHeadquartersId(Integer.valueOf(rs.getInt("pickup_headquarters_id")));
+                dto.setReturnHeadquartersId(Integer.valueOf(rs.getInt("return_headquarters_id")));
+                Timestamp start = rs.getTimestamp("start_date");
+                dto.setStartDate(start == null ? null : start.toLocalDateTime());
+                Timestamp end = rs.getTimestamp("end_date");
+                dto.setEndDate(end == null ? null : end.toLocalDateTime());
+                Timestamp created = rs.getTimestamp("created_at");
+                dto.setCreatedAt(created == null ? null : created.toLocalDateTime());
+                Timestamp updated = rs.getTimestamp("updated_at");
+                dto.setUpdatedAt(updated == null ? null : updated.toLocalDateTime());
+                return dto;
+        }
 }

@@ -1,6 +1,9 @@
 package com.pinguela.rentexpres.dao.impl;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,70 +14,93 @@ import com.pinguela.rentexpres.dao.VehicleCategoryDAO;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.VehicleCategoryDTO;
 
-/**
- * DAO i18n para vehicle_category. DDL: - vehicle_category(category_id,
- * category_name) - vehicle_category_language(category_id, language_id,
- * translated_name) - language(language_id, iso_code UNIQUE)
- */
 public class VehicleCategoryDAOImpl implements VehicleCategoryDAO {
 
-	private static final Logger logger = LogManager.getLogger(VehicleCategoryDAOImpl.class);
+    private static final Logger logger = LogManager.getLogger(VehicleCategoryDAOImpl.class);
 
-	// Resolvemos primero el idioma y luego unimos la traducción. Si isoCode==null →
-	// no hay match → fallback.
-	private static final String SELECT_I18N = "SELECT vc.category_id, "
-			+ "       COALESCE(vcl.translated_name, vc.category_name) AS category_name " + "FROM vehicle_category vc "
-			+ "LEFT JOIN language l ON l.iso_code = ? " + "LEFT JOIN vehicle_category_language vcl "
-			+ "  ON vcl.category_id = vc.category_id AND vcl.language_id = l.language_id ";
+    private static final String BASE_SELECT = String.join(" ",
+            "SELECT vc.category_id AS category_id,",
+            "       vc.category_name AS category_name",
+            "FROM vehicle_category vc");
 
-	@Override
-	public VehicleCategoryDTO findById(Connection c, Integer id, String isoCode) throws DataException {
-		if (id == null)
-			return null;
-		final String sql = SELECT_I18N + "WHERE vc.category_id = ?";
-		try (PreparedStatement ps = c.prepareStatement(sql)) {
-			ps.setString(1, normalizeIso(isoCode)); // null → no match → COALESCE usa base
-			ps.setInt(2, id);
-			try (ResultSet rs = ps.executeQuery()) {
-				return rs.next() ? load(rs) : null;
-			}
-		} catch (SQLException e) {
-			logger.error("[VehicleCategoryDAO.findById] id={}, iso={}", id, isoCode, e);
-			throw new DataException("Error finding VehicleCategory by id (i18n)", e);
-		}
-	}
+    private static final String I18N_SELECT = String.join(" ",
+            "SELECT vc.category_id AS category_id,",
+            "       COALESCE(vcl.translated_name, vc.category_name) AS category_name",
+            "FROM vehicle_category vc",
+            "LEFT JOIN language l ON l.iso_code = ?",
+            "LEFT JOIN vehicle_category_language vcl",
+            "       ON vcl.category_id = vc.category_id AND vcl.language_id = l.language_id");
 
-	@Override
-	public List<VehicleCategoryDTO> findAll(Connection c, String isoCode) throws DataException {
-		final String sql = SELECT_I18N + "ORDER BY vc.category_id";
-		List<VehicleCategoryDTO> out = new ArrayList<>();
-		try (PreparedStatement ps = c.prepareStatement(sql)) {
-			ps.setString(1, normalizeIso(isoCode));
-			try (ResultSet rs = ps.executeQuery()) {
-				while (rs.next())
-					out.add(load(rs));
-			}
-			return out;
-		} catch (SQLException e) {
-			logger.error("[VehicleCategoryDAO.findAll] iso={}", isoCode, e);
-			throw new DataException("Error listing VehicleCategory (i18n)", e);
-		}
-	}
+    @Override
+    public VehicleCategoryDTO findById(Connection connection, Integer id, String isoCode) throws DataException {
+        final String method = "findById";
+        if (id == null) {
+            logger.warn("[{}] called with null id", method);
+            return null;
+        }
+        String normalizedIso = normalizeIso(isoCode);
+        StringBuilder sql = new StringBuilder(normalizedIso != null ? I18N_SELECT : BASE_SELECT);
+        sql.append(" WHERE vc.category_id = ?");
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int idx = 1;
+            if (normalizedIso != null) {
+                ps.setString(idx++, normalizedIso);
+            }
+            ps.setInt(idx, id.intValue());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return load(rs);
+                }
+            }
+            logger.warn("[{}] No vehicle category found id {}", method, id);
+        } catch (SQLException e) {
+            logger.error("[{}] Error finding vehicle category id {}", method, id, e);
+            throw new DataException(e);
+        }
+        return null;
+    }
 
-	// ---- helpers ----
-	private VehicleCategoryDTO load(ResultSet rs) throws SQLException {
-		VehicleCategoryDTO v = new VehicleCategoryDTO();
-		v.setCategoryId(rs.getInt("category_id"));
-		v.setCategoryName(rs.getString("category_name"));
-		return v;
-	}
+    @Override
+    public List<VehicleCategoryDTO> findAll(Connection connection, String isoCode) throws DataException {
+        final String method = "findAll";
+        String normalizedIso = normalizeIso(isoCode);
+        StringBuilder sql = new StringBuilder(normalizedIso != null ? I18N_SELECT : BASE_SELECT);
+        sql.append(" ORDER BY vc.category_id");
+        List<VehicleCategoryDTO> results = new ArrayList<VehicleCategoryDTO>();
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            if (normalizedIso != null) {
+                ps.setString(1, normalizedIso);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    results.add(load(rs));
+                }
+            }
+            logger.info("[{}] {} vehicle categories found", method, Integer.valueOf(results.size()));
+        } catch (SQLException e) {
+            logger.error("[{}] Error listing vehicle categories", method, e);
+            throw new DataException(e);
+        }
+        return results;
+    }
 
-	// "es-ES" → "es"
-	private String normalizeIso(String iso) {
-		if (iso == null || iso.isBlank())
-			return null;
-		String v = iso.trim();
-		int p = v.indexOf('-');
-		return (p > 0 ? v.substring(0, p) : v).toLowerCase();
-	}
+    private VehicleCategoryDTO load(ResultSet rs) throws SQLException {
+        VehicleCategoryDTO dto = new VehicleCategoryDTO();
+        dto.setCategoryId(Integer.valueOf(rs.getInt("category_id")));
+        dto.setCategoryName(rs.getString("category_name"));
+        return dto;
+    }
+
+    private String normalizeIso(String iso) {
+        if (iso == null) {
+            return null;
+        }
+        String trimmed = iso.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        int dash = trimmed.indexOf('-');
+        String base = dash > 0 ? trimmed.substring(0, dash) : trimmed;
+        return base.toLowerCase();
+    }
 }

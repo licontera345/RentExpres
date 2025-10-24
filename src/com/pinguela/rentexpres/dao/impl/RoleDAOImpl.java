@@ -13,76 +13,62 @@ import org.apache.logging.log4j.Logger;
 import com.pinguela.rentexpres.dao.RoleDAO;
 import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.RoleDTO;
-import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class RoleDAOImpl implements RoleDAO {
 
-	private static final Logger logger = LogManager.getLogger(RoleDAOImpl.class);
+    private static final Logger logger = LogManager.getLogger(RoleDAOImpl.class);
 
-	@Override
-	public RoleDTO findById(Connection connection, Integer id) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		RoleDTO role = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+    private static final String BASE_SELECT = String.join(" ",
+            "SELECT r.role_id AS role_id,",
+            "       r.role_name AS role_name",
+            "FROM role r");
 
-		try {
-			String sql = "SELECT role_id, role_name FROM role WHERE role_id = ?";
-			ps = connection.prepareStatement(sql);
-			ps.setInt(1, id);
-			rs = ps.executeQuery();
+    @Override
+    public RoleDTO findById(Connection connection, Integer id) throws DataException {
+        final String method = "findById";
+        if (id == null) {
+            logger.warn("[{}] called with null id", method);
+            return null;
+        }
+        String sql = BASE_SELECT + " WHERE r.role_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id.intValue());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    logger.info("[{}] Role found with id: {}", method, id);
+                    return loadRole(rs);
+                }
+            }
+            logger.warn("[{}] No role found with id: {}", method, id);
+        } catch (SQLException e) {
+            logger.error("[{}] Error finding role by id: {}", method, id, e);
+            throw new DataException(e);
+        }
+        return null;
+    }
 
-			if (rs.next()) {
-				role = loadRole(rs);
-				logger.info("[{}] Role found with id: {}", method, id);
-			} else {
-				logger.warn("[{}] No Role found with id: {}", method, id);
-			}
+    @Override
+    public List<RoleDTO> findAll(Connection connection) throws DataException {
+        final String method = "findAll";
+        List<RoleDTO> roles = new ArrayList<RoleDTO>();
+        String sql = BASE_SELECT + " ORDER BY r.role_id";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                roles.add(loadRole(rs));
+            }
+            logger.info("[{}] Total roles found: {}", method, Integer.valueOf(roles.size()));
+        } catch (SQLException e) {
+            logger.error("[{}] Error retrieving all roles", method, e);
+            throw new DataException(e);
+        }
+        return roles;
+    }
 
-		} catch (SQLException e) {
-			logger.error("[{}] Error finding Role by id: {}", method, id, e);
-			throw new DataException("Error finding Role by id: " + id, e);
-		} finally {
-			JDBCUtils.close(ps, rs);
-		}
-
-		return role;
-	}
-
-	@Override
-	public List<RoleDTO> findAll(Connection connection) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		List<RoleDTO> list = new ArrayList<>();
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		try {
-			String sql = "SELECT role_id, role_name FROM role";
-			ps = connection.prepareStatement(sql);
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
-				list.add(loadRole(rs));
-			}
-
-			logger.info("[{}] Total Roles found: {}", method, list.size());
-
-		} catch (SQLException e) {
-			logger.error("[{}] Error retrieving all Roles", method, e);
-			throw new DataException("Error retrieving all Roles", e);
-		} finally {
-			JDBCUtils.close(ps, rs);
-		}
-
-		return list;
-	}
-
-	private RoleDTO loadRole(ResultSet rs) throws SQLException {
-		RoleDTO r = new RoleDTO();
-		r.setRoleId(rs.getInt("role_id"));
-		r.setRoleName(rs.getString("role_name"));
-		return r;
-	}
+    private RoleDTO loadRole(ResultSet rs) throws SQLException {
+        RoleDTO dto = new RoleDTO();
+        dto.setRoleId(Integer.valueOf(rs.getInt("role_id")));
+        dto.setRoleName(rs.getString("role_name"));
+        return dto;
+    }
 }
