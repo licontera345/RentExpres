@@ -1,176 +1,213 @@
 package com.pinguela.rentexpres.model;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Criteria class used to dynamically filter reservations. Each non-null
  * attribute will be added as a WHERE condition in DAO.
  */
-public class ReservationCriteria extends ValueObject {
+public class ReservationCriteria extends CriteriaBase {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	private Integer reservationId;
-	private Integer vehicleId;
-	private Integer userId;
-	private Integer employeeId;
-	private Integer reservationStatusId;
-	private Integer pickupHeadquartersId;
-	private Integer returnHeadquartersId;
+        private static final long serialVersionUID = 1L;
 
-	private LocalDateTime startDateFrom;
-	private LocalDateTime startDateTo;
-	private LocalDateTime endDateFrom;
-	private LocalDateTime endDateTo;
-	private LocalDateTime createdAtFrom;
-	private LocalDateTime createdAtTo;
-	private LocalDateTime updatedAtFrom;
-	private LocalDateTime updatedAtTo;
+        private static final Set<String> ORDERABLE = new HashSet<String>(
+                        Arrays.asList("reservation_id", "start_date", "end_date", "created_at", "updated_at"));
 
-	private Integer pageNumber;
-	private Integer pageSize;
+        private Integer reservationId;
+        private Integer vehicleId;
+        private Integer userId;
+        private Integer employeeId;
+        private Integer reservationStatusId;
+        private Integer pickupHeadquartersId;
+        private Integer returnHeadquartersId;
 
-	public ReservationCriteria() {
-		super();
-	}
+        private LocalDateTime startDateFrom;
+        private LocalDateTime startDateTo;
+        private LocalDateTime endDateFrom;
+        private LocalDateTime endDateTo;
+        private LocalDateTime createdAtFrom;
+        private LocalDateTime createdAtTo;
+        private LocalDateTime updatedAtFrom;
+        private LocalDateTime updatedAtTo;
 
-	public Integer getReservationId() {
-		return reservationId;
-	}
+        public ReservationCriteria() {
+                super();
+        }
 
-	public void setReservationId(Integer reservationId) {
-		this.reservationId = reservationId;
-	}
+        public Integer getReservationId() {
+                return reservationId;
+        }
 
-	public Integer getVehicleId() {
-		return vehicleId;
-	}
+        public void setReservationId(Integer reservationId) {
+                this.reservationId = reservationId;
+        }
 
-	public void setVehicleId(Integer vehicleId) {
-		this.vehicleId = vehicleId;
-	}
+        public Integer getVehicleId() {
+                return vehicleId;
+        }
 
-	public Integer getUserId() {
-		return userId;
-	}
+        public void setVehicleId(Integer vehicleId) {
+                this.vehicleId = vehicleId;
+        }
 
-	public void setUserId(Integer userId) {
-		this.userId = userId;
-	}
+        public Integer getUserId() {
+                return userId;
+        }
 
-	public Integer getEmployeeId() {
-		return employeeId;
-	}
+        public void setUserId(Integer userId) {
+                this.userId = userId;
+        }
 
-	public void setEmployeeId(Integer employeeId) {
-		this.employeeId = employeeId;
-	}
+        public Integer getEmployeeId() {
+                return employeeId;
+        }
 
-	public Integer getReservationStatusId() {
-		return reservationStatusId;
-	}
+        public void setEmployeeId(Integer employeeId) {
+                this.employeeId = employeeId;
+        }
 
-	public void setReservationStatusId(Integer reservationStatusId) {
-		this.reservationStatusId = reservationStatusId;
-	}
+        public Integer getReservationStatusId() {
+                return reservationStatusId;
+        }
 
-	public Integer getPickupHeadquartersId() {
-		return pickupHeadquartersId;
-	}
+        public void setReservationStatusId(Integer reservationStatusId) {
+                this.reservationStatusId = reservationStatusId;
+        }
 
-	public void setPickupHeadquartersId(Integer pickupHeadquartersId) {
-		this.pickupHeadquartersId = pickupHeadquartersId;
-	}
+        public Integer getPickupHeadquartersId() {
+                return pickupHeadquartersId;
+        }
 
-	public Integer getReturnHeadquartersId() {
-		return returnHeadquartersId;
-	}
+        public void setPickupHeadquartersId(Integer pickupHeadquartersId) {
+                this.pickupHeadquartersId = pickupHeadquartersId;
+        }
 
-	public void setReturnHeadquartersId(Integer returnHeadquartersId) {
-		this.returnHeadquartersId = returnHeadquartersId;
-	}
+        public Integer getReturnHeadquartersId() {
+                return returnHeadquartersId;
+        }
 
-	public LocalDateTime getStartDateFrom() {
-		return startDateFrom;
-	}
+        public void setReturnHeadquartersId(Integer returnHeadquartersId) {
+                this.returnHeadquartersId = returnHeadquartersId;
+        }
 
-	public void setStartDateFrom(LocalDateTime startDateFrom) {
-		this.startDateFrom = startDateFrom;
-	}
+        public LocalDateTime getStartDateFrom() {
+                return startDateFrom;
+        }
 
-	public LocalDateTime getStartDateTo() {
-		return startDateTo;
-	}
+        public void setStartDateFrom(LocalDateTime startDateFrom) {
+                this.startDateFrom = startDateFrom;
+        }
 
-	public void setStartDateTo(LocalDateTime startDateTo) {
-		this.startDateTo = startDateTo;
-	}
+        public LocalDateTime getStartDateTo() {
+                return startDateTo;
+        }
 
-	public LocalDateTime getEndDateFrom() {
-		return endDateFrom;
-	}
+        public void setStartDateTo(LocalDateTime startDateTo) {
+                this.startDateTo = startDateTo;
+        }
 
-	public void setEndDateFrom(LocalDateTime endDateFrom) {
-		this.endDateFrom = endDateFrom;
-	}
+        public LocalDateTime getEndDateFrom() {
+                return endDateFrom;
+        }
 
-	public LocalDateTime getEndDateTo() {
-		return endDateTo;
-	}
+        public void setEndDateFrom(LocalDateTime endDateFrom) {
+                this.endDateFrom = endDateFrom;
+        }
 
-	public void setEndDateTo(LocalDateTime endDateTo) {
-		this.endDateTo = endDateTo;
-	}
+        public LocalDateTime getEndDateTo() {
+                return endDateTo;
+        }
 
-	public LocalDateTime getCreatedAtFrom() {
-		return createdAtFrom;
-	}
+        public void setEndDateTo(LocalDateTime endDateTo) {
+                this.endDateTo = endDateTo;
+        }
 
-	public void setCreatedAtFrom(LocalDateTime createdAtFrom) {
-		this.createdAtFrom = createdAtFrom;
-	}
+        public LocalDateTime getCreatedAtFrom() {
+                return createdAtFrom;
+        }
 
-	public LocalDateTime getCreatedAtTo() {
-		return createdAtTo;
-	}
+        public void setCreatedAtFrom(LocalDateTime createdAtFrom) {
+                this.createdAtFrom = createdAtFrom;
+        }
 
-	public void setCreatedAtTo(LocalDateTime createdAtTo) {
-		this.createdAtTo = createdAtTo;
-	}
+        public LocalDateTime getCreatedAtTo() {
+                return createdAtTo;
+        }
 
-	public LocalDateTime getUpdatedAtFrom() {
-		return updatedAtFrom;
-	}
+        public void setCreatedAtTo(LocalDateTime createdAtTo) {
+                this.createdAtTo = createdAtTo;
+        }
 
-	public void setUpdatedAtFrom(LocalDateTime updatedAtFrom) {
-		this.updatedAtFrom = updatedAtFrom;
-	}
+        public LocalDateTime getUpdatedAtFrom() {
+                return updatedAtFrom;
+        }
 
-	public LocalDateTime getUpdatedAtTo() {
-		return updatedAtTo;
-	}
+        public void setUpdatedAtFrom(LocalDateTime updatedAtFrom) {
+                this.updatedAtFrom = updatedAtFrom;
+        }
 
-	public void setUpdatedAtTo(LocalDateTime updatedAtTo) {
-		this.updatedAtTo = updatedAtTo;
-	}
+        public LocalDateTime getUpdatedAtTo() {
+                return updatedAtTo;
+        }
 
-	public Integer getPageNumber() {
-		return pageNumber;
-	}
+        public void setUpdatedAtTo(LocalDateTime updatedAtTo) {
+                this.updatedAtTo = updatedAtTo;
+        }
 
-	public void setPageNumber(Integer pageNumber) {
-		this.pageNumber = pageNumber;
-	}
+        @Override
+        public Integer getPageNumber() {
+                return super.getPageNumber();
+        }
 
-	public Integer getPageSize() {
-		return pageSize;
-	}
+        @Override
+        public void setPageNumber(Integer pageNumber) {
+                super.setPageNumber(pageNumber);
+        }
 
-	public void setPageSize(Integer pageSize) {
-		this.pageSize = pageSize;
-	}
+        @Override
+        public Integer getPageSize() {
+                return super.getPageSize();
+        }
 
+        @Override
+        public void setPageSize(Integer pageSize) {
+                super.setPageSize(pageSize);
+        }
 
+        public boolean isOrderable(String column) {
+                return column != null && ORDERABLE.contains(column);
+        }
+
+        public String getSafeOrderBy() {
+                String column = getOrderBy();
+                return isOrderable(column) ? column : "reservation_id";
+        }
+
+        @Override
+        public void normalize() {
+                super.normalize();
+                if (startDateFrom != null && startDateTo != null && startDateFrom.isAfter(startDateTo)) {
+                        LocalDateTime tmp = startDateFrom;
+                        startDateFrom = startDateTo;
+                        startDateTo = tmp;
+                }
+                if (endDateFrom != null && endDateTo != null && endDateFrom.isAfter(endDateTo)) {
+                        LocalDateTime tmp = endDateFrom;
+                        endDateFrom = endDateTo;
+                        endDateTo = tmp;
+                }
+                if (createdAtFrom != null && createdAtTo != null && createdAtFrom.isAfter(createdAtTo)) {
+                        LocalDateTime tmp = createdAtFrom;
+                        createdAtFrom = createdAtTo;
+                        createdAtTo = tmp;
+                }
+                if (updatedAtFrom != null && updatedAtTo != null && updatedAtFrom.isAfter(updatedAtTo)) {
+                        LocalDateTime tmp = updatedAtFrom;
+                        updatedAtFrom = updatedAtTo;
+                        updatedAtTo = tmp;
+                }
+        }
 }
