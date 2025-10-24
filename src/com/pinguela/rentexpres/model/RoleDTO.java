@@ -2,16 +2,18 @@ package com.pinguela.rentexpres.model;
 
 public class RoleDTO extends ValueObject {
 
-    /**
+        /**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer roleId;     // role.role_id
-    private String roleName;    // role.role_name
+        private static final long serialVersionUID = 1L;
+        private Integer roleId;     // role.role_id
 
-    public RoleDTO() {
-    	super();
-    }
+        /** Maximum length: 50 characters. */
+        private String roleName;    // role.role_name
+
+        public RoleDTO() {
+        	super();
+        }
 
 	public Integer getRoleId() {
 		return roleId;
@@ -28,6 +30,6 @@ public class RoleDTO extends ValueObject {
 	public void setRoleName(String roleName) {
 		this.roleName = roleName;
 	}
-    
-    
+        
+        
 }

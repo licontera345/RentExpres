@@ -1,33 +1,33 @@
 package com.pinguela.rentexpres.model;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
 public class ReservationDTO extends ValueObject {
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer reservationId; // reservation.reservation_id
-	private Integer vehicleId; // FK → vehicle.vehicle_id
-	private Integer userId; // FK → user.user_id
-	private Integer employeeId; // FK → employee.employee_id
-	private Integer reservationStatusId; // FK → reservation_status.reservation_status_id
-	private Integer pickupHeadquartersId; // FK → headquarters.headquarters_id
-	private Integer returnHeadquartersId; // FK → headquarters.headquarters_id
-	private LocalDateTime startDate; // reservation.start_date
-	private LocalDateTime endDate; // reservation.end_date
-	private LocalDateTime createdAt; // reservation.created_at
-	private LocalDateTime updatedAt; // reservation.updated_at
+        private static final long serialVersionUID = 1L;
+        private Integer reservationId; // reservation.reservation_id
+        private Integer vehicleId; // FK → vehicle.vehicle_id
+        private Integer userId; // FK → user.user_id
+        private Integer employeeId; // FK → employee.employee_id
+        private Integer reservationStatusId; // FK → reservation_status.reservation_status_id
+        private Integer pickupHeadquartersId; // FK → headquarters.headquarters_id
+        private Integer returnHeadquartersId; // FK → headquarters.headquarters_id
+        private LocalDateTime startDate; // reservation.start_date
+        private LocalDateTime endDate; // reservation.end_date
+        private LocalDateTime createdAt; // reservation.created_at
+        /** Nullable audit column. */
+        private LocalDateTime updatedAt; // reservation.updated_at
 
-	// relational objects (for joins)
-	private List<VehicleDTO> vehicle;
-	private List<EmployeeDTO> employee;
-	private ReservationStatusDTO reservationStatus;
+        // relational objects (for joins)
+        private VehicleDTO vehicle;
+        private UserDTO user;
+        private EmployeeDTO employee;
+        private ReservationStatusDTO reservationStatus;
 
-	private List<HeadquartersDTO> pickupHeadquarters;
-	private List<HeadquartersDTO> returnHeadquarters;
+        private HeadquartersDTO pickupHeadquarters;
+        private HeadquartersDTO returnHeadquarters;
 
 	public ReservationDTO() {
 		super();
@@ -121,45 +121,53 @@ public class ReservationDTO extends ValueObject {
 		this.updatedAt = updatedAt;
 	}
 
-	public List<VehicleDTO> getVehicle() {
-		return vehicle;
-	}
+        public VehicleDTO getVehicle() {
+            return vehicle;
+        }
 
-	public void setVehicle(List<VehicleDTO> vehicle) {
-		this.vehicle = vehicle;
-	}
+        public void setVehicle(VehicleDTO vehicle) {
+            this.vehicle = vehicle;
+        }
 
-	public List<EmployeeDTO> getEmployee() {
-		return employee;
-	}
+        public UserDTO getUser() {
+            return user;
+        }
 
-	public void setEmployee(List<EmployeeDTO> employee) {
-		this.employee = employee;
-	}
+        public void setUser(UserDTO user) {
+            this.user = user;
+        }
 
-	public ReservationStatusDTO getReservationStatus() {
-		return reservationStatus;
-	}
+        public EmployeeDTO getEmployee() {
+            return employee;
+        }
 
-	public void setReservationStatus(ReservationStatusDTO reservationStatus) {
-		this.reservationStatus = reservationStatus;
-	}
+        public void setEmployee(EmployeeDTO employee) {
+            this.employee = employee;
+        }
 
-	public List<HeadquartersDTO> getPickupHeadquarters() {
-		return pickupHeadquarters;
-	}
+        public ReservationStatusDTO getReservationStatus() {
+            return reservationStatus;
+        }
 
-	public void setPickupHeadquarters(List<HeadquartersDTO> pickupHeadquarters) {
-		this.pickupHeadquarters = pickupHeadquarters;
-	}
+        public void setReservationStatus(ReservationStatusDTO reservationStatus) {
+            this.reservationStatus = reservationStatus;
+        }
 
-	public List<HeadquartersDTO> getReturnHeadquarters() {
-		return returnHeadquarters;
-	}
+        public HeadquartersDTO getPickupHeadquarters() {
+            return pickupHeadquarters;
+        }
 
-	public void setReturnHeadquarters(List<HeadquartersDTO> returnHeadquarters) {
-		this.returnHeadquarters = returnHeadquarters;
-	}
+        public void setPickupHeadquarters(HeadquartersDTO pickupHeadquarters) {
+            this.pickupHeadquarters = pickupHeadquarters;
+        }
+
+        public HeadquartersDTO getReturnHeadquarters() {
+            return returnHeadquarters;
+        }
+
+        public void setReturnHeadquarters(HeadquartersDTO returnHeadquarters) {
+            this.returnHeadquarters = returnHeadquarters;
+        }
 
 
 }

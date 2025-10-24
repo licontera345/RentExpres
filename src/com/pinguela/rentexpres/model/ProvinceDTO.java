@@ -6,8 +6,10 @@ public class ProvinceDTO extends ValueObject {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private Integer provinceId;
-	private String provinceName;
+        private Integer provinceId;
+
+        /** Maximum length: 255 characters. */
+        private String provinceName;
 
 	public ProvinceDTO() {
 		super();

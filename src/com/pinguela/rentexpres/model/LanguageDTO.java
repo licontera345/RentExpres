@@ -2,18 +2,22 @@ package com.pinguela.rentexpres.model;
 
 public class LanguageDTO extends ValueObject {
 
-    /**
+        /**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer languageId;
-    private String isoCode;
-    private String name;
+        private static final long serialVersionUID = 1L;
+        private Integer languageId;
 
-    public LanguageDTO() { 
-    	
-    	super();
-    }
+        /** Maximum length: 8 characters. */
+        private String isoCode;
+
+        /** Maximum length: 60 characters. */
+        private String name;
+
+        public LanguageDTO() { 
+        	
+        	super();
+        }
 
 	public Integer getLanguageId() {
 		return languageId;
@@ -38,6 +42,6 @@ public class LanguageDTO extends ValueObject {
 	public void setName(String name) {
 		this.name = name;
 	}
-    
-    
+        
+        
 }

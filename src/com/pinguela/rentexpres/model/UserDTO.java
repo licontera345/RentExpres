@@ -2,32 +2,47 @@ package com.pinguela.rentexpres.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-
 public class UserDTO extends ValueObject {
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer userId; // user.user_id
-	private String username; // user.username
-	private String firstName; // user.first_name
-	private String lastName1; // user.last_name1
-	private String lastName2; // user.last_name2
-	private LocalDate birthDate; // user.birth_date
-	private String email; // user.email
-	private String password; // user.password
-	private Integer roleId;
-	private String phone; // user.phone
-	private Integer addressId;
-	private Boolean activeStatus; // user.active_status (tinyint 1/0)
-	private LocalDateTime createdAt; // user.created_at
-	private LocalDateTime updatedAt; // user.updated_at
+        private static final long serialVersionUID = 1L;
+        private Integer userId; // user.user_id
 
-	// Relation objects (optional, useful for joins or criteria)
-	private List<RoleDTO> role;
-	private List<AddressDTO> address;
+        /** Maximum length: 255 characters. */
+        private String username; // user.username
+
+        /** Maximum length: 255 characters. */
+        private String firstName; // user.first_name
+
+        /** Maximum length: 45 characters. */
+        private String lastName1; // user.last_name1
+
+        /** Nullable. Maximum length: 45 characters. */
+        private String lastName2; // user.last_name2
+
+        private LocalDate birthDate; // user.birth_date
+
+        /** Maximum length: 255 characters. */
+        private String email; // user.email
+
+        /** Maximum length: 255 characters. */
+        private String password; // user.password
+
+        private Integer roleId; // user.role_id
+
+        /** Maximum length: 20 characters. */
+        private String phone; // user.phone
+
+        private Integer addressId; // user.address_id
+        private Boolean activeStatus; // user.active_status (tinyint 1/0)
+        private LocalDateTime createdAt; // user.created_at
+        /** Nullable audit column. */
+        private LocalDateTime updatedAt; // user.updated_at
+
+        private RoleDTO role;
+        private AddressDTO address;
 
 	public UserDTO() {
 		super();
@@ -145,20 +160,20 @@ public class UserDTO extends ValueObject {
 		this.updatedAt = updatedAt;
 	}
 
-	public List<RoleDTO> getRole() {
-		return role;
-	}
+        public RoleDTO getRole() {
+            return role;
+        }
 
-	public void setRole(List<RoleDTO> role) {
-		this.role = role;
-	}
+        public void setRole(RoleDTO role) {
+            this.role = role;
+        }
 
-	public List<AddressDTO> getAddress() {
-		return address;
-	}
+        public AddressDTO getAddress() {
+            return address;
+        }
 
-	public void setAddress(List<AddressDTO> address) {
-		this.address = address;
-	}
+        public void setAddress(AddressDTO address) {
+            this.address = address;
+        }
 
 }

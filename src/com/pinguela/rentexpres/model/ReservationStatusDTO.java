@@ -7,11 +7,13 @@ public class ReservationStatusDTO extends ValueObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer reservationStatusId; // reservation_status.reservation_status_id
-	private String statusName; // reservation_status.status_name
+        private static final long serialVersionUID = 1L;
+        private Integer reservationStatusId; // reservation_status.reservation_status_id
 
-	private List<LanguageDTO> language;
+        /** Maximum length: 50 characters. */
+        private String statusName; // reservation_status.status_name
+
+        private List<ReservationStatusLanguageDTO> translations;
 
 	public ReservationStatusDTO() {
 		super();
@@ -33,12 +35,12 @@ public class ReservationStatusDTO extends ValueObject {
 		this.statusName = statusName;
 	}
 
-	public List<LanguageDTO> getLanguage() {
-		return language;
-	}
+        public List<ReservationStatusLanguageDTO> getTranslations() {
+            return translations;
+        }
 
-	public void setLanguage(List<LanguageDTO> language) {
-		this.language = language;
-	}
+        public void setTranslations(List<ReservationStatusLanguageDTO> translations) {
+            this.translations = translations;
+        }
 
 }

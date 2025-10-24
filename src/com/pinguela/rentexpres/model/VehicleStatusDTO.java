@@ -7,11 +7,13 @@ public class VehicleStatusDTO extends ValueObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer vehicleStatusId; // vehicle_status.vehicle_status_id
-	private String statusName; // vehicle_status.status_name
+        private static final long serialVersionUID = 1L;
+        private Integer vehicleStatusId; // vehicle_status.vehicle_status_id
 
-	private List<LanguageDTO> language;
+        /** Maximum length: 50 characters. */
+        private String statusName; // vehicle_status.status_name
+
+        private List<VehicleStatusLanguageDTO> translations;
 
 	public VehicleStatusDTO() {
 		super();
@@ -33,12 +35,12 @@ public class VehicleStatusDTO extends ValueObject {
 		this.statusName = statusName;
 	}
 
-	public List<LanguageDTO> getLanguage() {
-		return language;
-	}
+        public List<VehicleStatusLanguageDTO> getTranslations() {
+            return translations;
+        }
 
-	public void setLanguage(List<LanguageDTO> language) {
-		this.language = language;
-	}
+        public void setTranslations(List<VehicleStatusLanguageDTO> translations) {
+            this.translations = translations;
+        }
 
 }

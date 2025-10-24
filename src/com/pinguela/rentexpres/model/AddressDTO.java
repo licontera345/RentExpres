@@ -5,73 +5,100 @@ public class AddressDTO extends ValueObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer Id; // address.address_id
-	private String street; // address.street
-	private String number; // address.number
-	private Integer cityId;
-	private String cityName;
-	private Integer provinceId;
-	private String provinceName;
+        private static final long serialVersionUID = 1L;
+
+        private Integer addressId; // address.address_id
+
+        /** Maximum length: 255 characters. */
+        private String street; // address.street
+
+        /** Maximum length: 10 characters. */
+        private String number; // address.number
+
+        private Integer cityId; // address.city_id
+
+        private String cityName; // derived from city.city_name
+
+        private Integer provinceId; // derived from city.province_id
+
+        private String provinceName; // derived from province.province_name
+
+        private CityDTO city;
 
 	public AddressDTO() {
 		super();
 	}
 
-	public Integer getProvinceId() {
-		return provinceId;
-	}
+        public Integer getProvinceId() {
+                return provinceId;
+        }
 
-	public void setProvinceId(Integer provinceId) {
-		this.provinceId = provinceId;
-	}
+        public void setProvinceId(Integer provinceId) {
+                this.provinceId = provinceId;
+        }
 
-	public Integer getCityId() {
-		return cityId;
-	}
+        public Integer getCityId() {
+                return cityId;
+        }
 
-	public void setCityId(Integer cityId) {
-		this.cityId = cityId;
-	}
+        public void setCityId(Integer cityId) {
+                this.cityId = cityId;
+        }
 
-	public String getCityName() {
-		return cityName;
-	}
+        public String getCityName() {
+                return cityName;
+        }
 
-	public void setCityName(String cityName) {
-		this.cityName = cityName;
-	}
+        public void setCityName(String cityName) {
+                this.cityName = cityName;
+        }
 
-	public String getProvinceName() {
-		return provinceName;
-	}
+        public String getProvinceName() {
+                return provinceName;
+        }
 
-	public void setProvinceName(String provinceName) {
-		this.provinceName = provinceName;
-	}
+        public void setProvinceName(String provinceName) {
+                this.provinceName = provinceName;
+        }
 
-	public Integer getId() {
-		return Id;
-	}
+        public Integer getAddressId() {
+                return addressId;
+        }
 
-	public void setId(Integer Id) {
-		this.Id = Id;
-	}
+        public void setAddressId(Integer addressId) {
+                this.addressId = addressId;
+        }
 
-	public String getStreet() {
-		return street;
-	}
+        public Integer getId() {
+                return addressId;
+        }
 
-	public void setStreet(String street) {
-		this.street = street;
-	}
+        public void setId(Integer id) {
+                this.addressId = id;
+        }
 
-	public String getNumber() {
-		return number;
-	}
+        public String getStreet() {
+                return street;
+        }
 
-	public void setNumber(String number) {
-		this.number = number;
-	}
+        public void setStreet(String street) {
+                this.street = street;
+        }
+
+        public String getNumber() {
+                return number;
+        }
+
+        public void setNumber(String number) {
+                this.number = number;
+        }
+
+        public CityDTO getCity() {
+                return city;
+        }
+
+        public void setCity(CityDTO city) {
+                this.city = city;
+        }
 
 }
