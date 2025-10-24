@@ -7,8 +7,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,401 +23,398 @@ import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.RentalCriteria;
 import com.pinguela.rentexpres.model.RentalDTO;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class RentalDAOImpl implements RentalDAO {
 
-	private static final Logger logger = LogManager.getLogger(RentalDAOImpl.class);
+        private static final Logger logger = LogManager.getLogger(RentalDAOImpl.class);
 
-	private static final String SELECT_BASE = "SELECT r.rental_id, r.reservation_id, r.start_date_effective, r.end_date_effective, "
-			+ "r.initial_km, r.final_km, r.total_cost, r.rental_status_id, s.status_name AS rentalStatusName, "
-			+ "res.vehicle_id, v.license_plate, v.brand, v.model, "
-			+ "res.user_id, u.first_name AS userFirstName, u.last_name1 AS userLastName1, u.phone, "
-			+ "r.pickup_headquarters_id, h1.name AS pickupHeadquarters, "
-			+ "r.return_headquarters_id, h2.name AS returnHeadquarters, " + "r.created_at, r.updated_at "
-			+ "FROM rental r " + "INNER JOIN rental_status s ON r.rental_status_id = s.rental_status_id "
-			+ "INNER JOIN reservation res ON r.reservation_id = res.reservation_id "
-			+ "INNER JOIN vehicle v ON res.vehicle_id = v.vehicle_id " + "INNER JOIN user u ON res.user_id = u.user_id "
-			+ "INNER JOIN headquarters h1 ON r.pickup_headquarters_id = h1.headquarters_id "
-			+ "INNER JOIN headquarters h2 ON r.return_headquarters_id = h2.headquarters_id";
+        private static final String BASE_SELECT = String.join(" ",
+                        "SELECT r.rental_id, r.reservation_id, r.start_date_effective, r.end_date_effective,",
+                        "       r.initial_km, r.final_km, r.rental_status_id, r.total_cost,",
+                        "       r.pickup_headquarters_id, r.return_headquarters_id, r.created_at, r.updated_at,",
+                        "       res.vehicle_id, res.user_id,",
+                        "       v.license_plate, v.brand, v.model,",
+                        "       u.first_name AS user_first_name, u.last_name1 AS user_last_name1, u.phone AS user_phone,",
+                        "       s.status_name AS rental_status_name,",
+                        "       h1.name AS pickup_headquarters_name, h2.name AS return_headquarters_name",
+                        "FROM rental r",
+                        "INNER JOIN rental_status s ON r.rental_status_id = s.rental_status_id",
+                        "INNER JOIN reservation res ON r.reservation_id = res.reservation_id",
+                        "INNER JOIN vehicle v ON res.vehicle_id = v.vehicle_id",
+                        "INNER JOIN user u ON res.user_id = u.user_id",
+                        "INNER JOIN headquarters h1 ON r.pickup_headquarters_id = h1.headquarters_id",
+                        "INNER JOIN headquarters h2 ON r.return_headquarters_id = h2.headquarters_id");
 
-	@Override
-	public RentalDTO findById(Connection connection, Integer id) throws DataException {
-		if (id == null) {
-			logger.warn("findById called with null id.");
-			return null;
-		}
-		String sql = SELECT_BASE + " WHERE r.rental_id = ?";
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) {
-					logger.info("Rental found, id: {}", id);
-					return loadRental(rs);
-				} else {
-					logger.warn("No rental found with id: {}", id);
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("Error in findById for rental id: {}", id, e);
-			throw new DataException("Error finding rental by ID", e);
-		}
-		return null;
-	}
+        private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 
-	@Override
-	public List<RentalDTO> findAll(Connection connection) throws DataException {
-		List<RentalDTO> list = new ArrayList<>();
-		String sql = SELECT_BASE + " ORDER BY r.start_date_effective DESC";
-		try (PreparedStatement ps = connection.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-				list.add(loadRental(rs));
-			}
-			logger.info("Total rentals found: {}", list.size());
-		} catch (SQLException e) {
-			logger.error("Error in findAll rental", e);
-			throw new DataException("Error in findAll rental", e);
-		}
-		return list;
-	}
+        private static Map<String, String> buildOrderColumns() {
+                Map<String, String> map = new HashMap<String, String>();
+                map.put("rental_id", "r.rental_id");
+                map.put("start_date_effective", "r.start_date_effective");
+                map.put("end_date_effective", "r.end_date_effective");
+                map.put("total_cost", "r.total_cost");
+                map.put("created_at", "r.created_at");
+                map.put("updated_at", "r.updated_at");
+                return map;
+        }
 
-	@Override
-	public boolean create(Connection connection, RentalDTO rental) throws DataException {
-		if (rental == null) {
-			logger.warn("create called with null rental.");
-			return false;
-		}
-		String sql = "INSERT INTO rental (reservation_id, start_date_effective, end_date_effective, initial_km, final_km, rental_status_id, total_cost, pickup_headquarters_id, return_headquarters_id) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-		try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-			setRentalParameters(ps, rental, false);
-			if (ps.executeUpdate() > 0) {
-				try (ResultSet gen = ps.getGeneratedKeys()) {
-					if (gen.next()) {
-						rental.setRentalId(gen.getInt(1));
-					}
-				}
-				logger.info("Rental created successfully. New ID: {}", rental.getRentalId());
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("Error creating rental", e);
-			throw new DataException("Error creating rental", e);
-		}
-		return false;
-	}
+        @Override
+        public RentalDTO findById(Connection connection, Integer id) throws DataException {
+                final String method = "findById";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return null;
+                }
 
-	@Override
-	public boolean update(Connection connection, RentalDTO rental) throws DataException {
-		if (rental == null || rental.getRentalId() == null) {
-			logger.warn("update called with null rental or null id.");
-			return false;
-		}
-		String sql = "UPDATE rental SET start_date_effective = ?, end_date_effective = ?, initial_km = ?, final_km = ?, rental_status_id = ?, total_cost = ?, pickup_headquarters_id = ?, return_headquarters_id = ? "
-				+ "WHERE rental_id = ?";
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			setRentalParameters(ps, rental, true);
-			if (ps.executeUpdate() > 0) {
-				logger.info("Rental updated successfully. ID: {}", rental.getRentalId());
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("Error updating rental", e);
-			throw new DataException("Error updating rental", e);
-		}
-		return false;
-	}
+                String sql = BASE_SELECT + " WHERE r.rental_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        try (ResultSet rs = ps.executeQuery()) {
+                                if (rs.next()) {
+                                        logger.info("[{}] Rental found with id {}", method, id);
+                                        return toRentalDTO(rs);
+                                }
+                        }
+                        logger.warn("[{}] No rental found with id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error finding rental id {}", method, id, e);
+                        throw new DataException("Error finding rental by id", e);
+                }
+                return null;
+        }
 
-	@Override
-	public boolean delete(Connection connection, Integer id) throws DataException {
-		if (id == null) {
-			logger.warn("delete called with null id.");
-			return false;
-		}
-		String sql = "DELETE FROM rental WHERE rental_id = ?";
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			if (ps.executeUpdate() > 0) {
-				logger.info("Rental deleted. ID: {}", id);
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("Error deleting rental with ID: {}", id, e);
-			throw new DataException("Error deleting rental with ID: " + id, e);
-		}
-		return false;
-	}
+        @Override
+        public List<RentalDTO> findAll(Connection connection) throws DataException {
+                final String method = "findAll";
+                List<RentalDTO> rentals = new ArrayList<RentalDTO>();
+                String sql = BASE_SELECT + " ORDER BY r.start_date_effective DESC";
+                try (PreparedStatement ps = connection.prepareStatement(sql);
+                                ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                                rentals.add(toRentalDTO(rs));
+                        }
+                        logger.info("[{}] Retrieved {} rentals", method, Integer.valueOf(rentals.size()));
+                } catch (SQLException e) {
+                        logger.error("[{}] Error retrieving rentals", method, e);
+                        throw new DataException("Error retrieving rentals", e);
+                }
+                return rentals;
+        }
 
-	@Override
-	public Results<RentalDTO> findByCriteria(Connection connection, RentalCriteria criteria) throws DataException {
-		Results<RentalDTO> results = new Results<>();
-		List<RentalDTO> list = new ArrayList<>();
-		int pageNumber = criteria.getPageNumber();
-		int pageSize = criteria.getPageSize();
-		int offset = (pageNumber - 1) * pageSize;
+        @Override
+        public boolean create(Connection connection, RentalDTO rental) throws DataException {
+                final String method = "create";
+                if (rental == null) {
+                        logger.warn("[{}] called with null rental", method);
+                        return false;
+                }
 
-		StringBuilder sql = new StringBuilder(SELECT_BASE);
-		sql.append(" WHERE 1=1 ");
-		if (criteria.getRentalId() != null)
-			sql.append(" AND r.rental_id = ? ");
-		if (criteria.getReservationId() != null)
-			sql.append(" AND r.reservation_id = ? ");
-		if (criteria.getStartDateEffective() != null)
-			sql.append(" AND r.start_date_effective >= ? ");
-		if (criteria.getEndDateEffective() != null)
-			sql.append(" AND r.end_date_effective <= ? ");
-		if (criteria.getInitialKm() != null)
-			sql.append(" AND r.initial_km >= ? ");
-		if (criteria.getFinalKm() != null)
-			sql.append(" AND r.final_km <= ? ");
-		if (criteria.getRentalStatusId() != null)
-			sql.append(" AND r.rental_status_id = ? ");
-		if (criteria.getTotalCost() != null)
-			sql.append(" AND r.total_cost = ? ");
+                String sql = "INSERT INTO rental (reservation_id, start_date_effective, end_date_effective, initial_km, final_km,"
+                                + " rental_status_id, total_cost, pickup_headquarters_id, return_headquarters_id, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
-		if (criteria.getUserId() != null)
-			sql.append(" AND res.user_id = ? ");
-		if (criteria.getUserFirstName() != null && !criteria.getUserFirstName().isEmpty())
-			sql.append(" AND u.first_name LIKE ? ");
-		if (criteria.getUserLastName1() != null && !criteria.getUserLastName1().isEmpty())
-			sql.append(" AND u.last_name1 LIKE ? ");
-		if (criteria.getPhone() != null && !criteria.getPhone().isEmpty())
-			sql.append(" AND u.phone LIKE ? ");
+                try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                        bindWrite(ps, rental, false);
+                        if (ps.executeUpdate() > 0) {
+                                try (ResultSet keys = ps.getGeneratedKeys()) {
+                                        if (keys.next()) {
+                                                rental.setRentalId(Integer.valueOf(keys.getInt(1)));
+                                        }
+                                }
+                                logger.info("[{}] Created rental id {}", method, rental.getRentalId());
+                                return true;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error creating rental", method, e);
+                        throw new DataException("Error creating rental", e);
+                }
+                return false;
+        }
 
-		if (criteria.getVehicleId() != null)
-			sql.append(" AND res.vehicle_id = ? ");
-		if (criteria.getBrand() != null && !criteria.getBrand().isEmpty())
-			sql.append(" AND v.brand LIKE ? ");
-		if (criteria.getLicensePlate() != null && !criteria.getLicensePlate().isEmpty())
-			sql.append(" AND v.license_plate LIKE ? ");
-		if (criteria.getModel() != null && !criteria.getModel().isEmpty())
-			sql.append(" AND v.model LIKE ? ");
+        @Override
+        public boolean update(Connection connection, RentalDTO rental) throws DataException {
+                final String method = "update";
+                if (rental == null || rental.getRentalId() == null) {
+                        logger.warn("[{}] called with null rental or id", method);
+                        return false;
+                }
 
-		sql.append(" ORDER BY r.start_date_effective DESC LIMIT ? OFFSET ?");
+                String sql = "UPDATE rental SET start_date_effective = ?, end_date_effective = ?, initial_km = ?, final_km = ?,"
+                                + " rental_status_id = ?, total_cost = ?, pickup_headquarters_id = ?, return_headquarters_id = ?,"
+                                + " updated_at = NOW() WHERE rental_id = ?";
 
-		try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-			int idx = 1;
-			if (criteria.getRentalId() != null)
-				ps.setInt(idx++, criteria.getRentalId());
-			if (criteria.getReservationId() != null)
-				ps.setInt(idx++, criteria.getReservationId());
-			if (criteria.getStartDateEffective() != null)
-				ps.setTimestamp(idx++, Timestamp.valueOf(criteria.getStartDateEffective()));
-			if (criteria.getEndDateEffective() != null)
-				ps.setTimestamp(idx++, Timestamp.valueOf(criteria.getEndDateEffective()));
-			if (criteria.getInitialKm() != null)
-				ps.setInt(idx++, criteria.getInitialKm());
-			if (criteria.getFinalKm() != null)
-				ps.setInt(idx++, criteria.getFinalKm());
-			if (criteria.getRentalStatusId() != null)
-				ps.setInt(idx++, criteria.getRentalStatusId());
-			if (criteria.getTotalCost() != null)
-				ps.setBigDecimal(idx++, criteria.getTotalCost());
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        bindWrite(ps, rental, true);
+                        int updated = ps.executeUpdate();
+                        if (updated > 0) {
+                                logger.info("[{}] Updated rental id {}", method, rental.getRentalId());
+                                return true;
+                        }
+                        logger.warn("[{}] No rental updated for id {}", method, rental.getRentalId());
+                } catch (SQLException e) {
+                        logger.error("[{}] Error updating rental id {}", method, rental.getRentalId(), e);
+                        throw new DataException("Error updating rental", e);
+                }
+                return false;
+        }
 
-			if (criteria.getUserId() != null)
-				ps.setInt(idx++, criteria.getUserId());
-			if (criteria.getUserFirstName() != null && !criteria.getUserFirstName().isEmpty())
-				ps.setString(idx++, "%" + criteria.getUserFirstName() + "%");
-			if (criteria.getUserLastName1() != null && !criteria.getUserLastName1().isEmpty())
-				ps.setString(idx++, "%" + criteria.getUserLastName1() + "%");
-			if (criteria.getPhone() != null && !criteria.getPhone().isEmpty())
-				ps.setString(idx++, "%" + criteria.getPhone() + "%");
+        @Override
+        public boolean delete(Connection connection, Integer id) throws DataException {
+                final String method = "delete";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return false;
+                }
+                String sql = "DELETE FROM rental WHERE rental_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        int rows = ps.executeUpdate();
+                        if (rows > 0) {
+                                logger.info("[{}] Rental {} deleted", method, id);
+                                return true;
+                        }
+                        logger.warn("[{}] No rental deleted for id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error deleting rental id {}", method, id, e);
+                        throw new DataException("Error deleting rental", e);
+                }
+                return false;
+        }
 
-			if (criteria.getVehicleId() != null)
-				ps.setInt(idx++, criteria.getVehicleId());
-			if (criteria.getBrand() != null && !criteria.getBrand().isEmpty())
-				ps.setString(idx++, "%" + criteria.getBrand() + "%");
-			if (criteria.getLicensePlate() != null && !criteria.getLicensePlate().isEmpty())
-				ps.setString(idx++, "%" + criteria.getLicensePlate() + "%");
-			if (criteria.getModel() != null && !criteria.getModel().isEmpty())
-				ps.setString(idx++, "%" + criteria.getModel() + "%");
+        @Override
+        public Results<RentalDTO> findByCriteria(Connection connection, RentalCriteria criteria) throws DataException {
+                final String method = "findByCriteria";
+                if (criteria == null) {
+                        criteria = new RentalCriteria();
+                }
+                criteria.normalize();
 
-			ps.setInt(idx++, pageSize);
-			ps.setInt(idx++, offset);
+                Results<RentalDTO> results = new Results<RentalDTO>();
+                List<Object> filters = new ArrayList<Object>();
 
-			try (ResultSet rs = ps.executeQuery()) {
-				while (rs.next()) {
-					list.add(loadRental(rs));
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("Error executing paginated rental search", e);
-			throw new DataException("Error executing search", e);
-		}
+                StringBuilder from = new StringBuilder(BASE_SELECT.substring(BASE_SELECT.indexOf("FROM")));
+                StringBuilder where = new StringBuilder(" WHERE 1=1");
 
-		int totalRecords = 0;
-		StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM rental r ");
-		countSql.append("INNER JOIN rental_status s ON r.rental_status_id = s.rental_status_id ");
-		countSql.append("INNER JOIN reservation res ON r.reservation_id = res.reservation_id ");
-		countSql.append("INNER JOIN vehicle v ON res.vehicle_id = v.vehicle_id ");
-		countSql.append("INNER JOIN user u ON res.user_id = u.user_id ");
-		countSql.append(" WHERE 1=1 ");
+                addEqualsFilter(where, filters, " AND r.rental_id = ?", criteria.getRentalId());
+                addEqualsFilter(where, filters, " AND r.rental_status_id = ?", criteria.getRentalStatusId());
+                addEqualsFilter(where, filters, " AND r.reservation_id = ?", criteria.getReservationId());
+                addEqualsFilter(where, filters, " AND res.user_id = ?", criteria.getUserId());
+                addEqualsFilter(where, filters, " AND res.employee_id = ?", criteria.getEmployeeId());
+                addEqualsFilter(where, filters, " AND res.vehicle_id = ?", criteria.getVehicleId());
+                addEqualsFilter(where, filters, " AND r.pickup_headquarters_id = ?", criteria.getPickupHeadquartersId());
+                addEqualsFilter(where, filters, " AND r.return_headquarters_id = ?", criteria.getReturnHeadquartersId());
 
-		if (criteria.getRentalId() != null)
-			countSql.append(" AND r.rental_id = ? ");
-		if (criteria.getReservationId() != null)
-			countSql.append(" AND r.reservation_id = ? ");
-		if (criteria.getStartDateEffective() != null)
-			countSql.append(" AND r.start_date_effective >= ? ");
-		if (criteria.getEndDateEffective() != null)
-			countSql.append(" AND r.end_date_effective <= ? ");
-		if (criteria.getInitialKm() != null)
-			countSql.append(" AND r.initial_km >= ? ");
-		if (criteria.getFinalKm() != null)
-			countSql.append(" AND r.final_km <= ? ");
-		if (criteria.getRentalStatusId() != null)
-			countSql.append(" AND r.rental_status_id = ? ");
-		if (criteria.getTotalCost() != null)
-			countSql.append(" AND r.total_cost = ? ");
+                addRangeFilter(where, filters, " AND r.initial_km >= ?", " AND r.initial_km <= ?", criteria.getInitialKmMin(),
+                                criteria.getInitialKmMax());
+                addRangeFilter(where, filters, " AND r.final_km >= ?", " AND r.final_km <= ?", criteria.getFinalKmMin(),
+                                criteria.getFinalKmMax());
+                addRangeFilter(where, filters, " AND r.total_cost >= ?", " AND r.total_cost <= ?",
+                                criteria.getTotalCostMin(), criteria.getTotalCostMax());
 
-		if (criteria.getUserId() != null)
-			countSql.append(" AND res.user_id = ? ");
-		if (criteria.getUserFirstName() != null && !criteria.getUserFirstName().isEmpty())
-			countSql.append(" AND u.first_name LIKE ? ");
-		if (criteria.getUserLastName1() != null && !criteria.getUserLastName1().isEmpty())
-			countSql.append(" AND u.last_name1 LIKE ? ");
-		if (criteria.getPhone() != null && !criteria.getPhone().isEmpty())
-			countSql.append(" AND u.phone LIKE ? ");
+                addRangeFilter(where, filters, " AND r.start_date_effective >= ?", " AND r.start_date_effective <= ?",
+                                criteria.getStartDateEffectiveFrom(), criteria.getStartDateEffectiveTo());
+                addRangeFilter(where, filters, " AND r.end_date_effective >= ?", " AND r.end_date_effective <= ?",
+                                criteria.getEndDateEffectiveFrom(), criteria.getEndDateEffectiveTo());
+                addRangeFilter(where, filters, " AND r.created_at >= ?", " AND r.created_at <= ?",
+                                criteria.getCreatedAtFrom(), criteria.getCreatedAtTo());
+                addRangeFilter(where, filters, " AND r.updated_at >= ?", " AND r.updated_at <= ?",
+                                criteria.getUpdatedAtFrom(), criteria.getUpdatedAtTo());
 
-		if (criteria.getVehicleId() != null)
-			countSql.append(" AND res.vehicle_id = ? ");
-		if (criteria.getBrand() != null && !criteria.getBrand().isEmpty())
-			countSql.append(" AND v.brand LIKE ? ");
-		if (criteria.getLicensePlate() != null && !criteria.getLicensePlate().isEmpty())
-			countSql.append(" AND v.license_plate LIKE ? ");
-		if (criteria.getModel() != null && !criteria.getModel().isEmpty())
-			countSql.append(" AND v.model LIKE ? ");
+                addEqualsFilter(where, filters, " AND r.start_date_effective = ?", criteria.getStartDateEffective());
+                addEqualsFilter(where, filters, " AND r.end_date_effective = ?", criteria.getEndDateEffective());
+                addEqualsFilter(where, filters, " AND r.initial_km = ?", criteria.getInitialKm());
+                addEqualsFilter(where, filters, " AND r.final_km = ?", criteria.getFinalKm());
+                addEqualsFilter(where, filters, " AND r.total_cost = ?", criteria.getTotalCost());
 
-		try (PreparedStatement countPs = connection.prepareStatement(countSql.toString())) {
-			int idx = 1;
-			if (criteria.getRentalId() != null)
-				countPs.setInt(idx++, criteria.getRentalId());
-			if (criteria.getReservationId() != null)
-				countPs.setInt(idx++, criteria.getReservationId());
-			if (criteria.getStartDateEffective() != null)
-				countPs.setTimestamp(idx++, Timestamp.valueOf(criteria.getStartDateEffective()));
-			if (criteria.getEndDateEffective() != null)
-				countPs.setTimestamp(idx++, Timestamp.valueOf(criteria.getEndDateEffective()));
-			if (criteria.getInitialKm() != null)
-				countPs.setInt(idx++, criteria.getInitialKm());
-			if (criteria.getFinalKm() != null)
-				countPs.setInt(idx++, criteria.getFinalKm());
-			if (criteria.getRentalStatusId() != null)
-				countPs.setInt(idx++, criteria.getRentalStatusId());
-			if (criteria.getTotalCost() != null)
-				countPs.setBigDecimal(idx++, criteria.getTotalCost());
+                addLikeFilter(where, filters, " AND u.first_name LIKE ?", criteria.getUserFirstName());
+                addLikeFilter(where, filters, " AND u.last_name1 LIKE ?", criteria.getUserLastName1());
+                addLikeFilter(where, filters, " AND u.phone LIKE ?", criteria.getPhone());
+                addLikeFilter(where, filters, " AND v.license_plate LIKE ?", criteria.getLicensePlate());
+                addLikeFilter(where, filters, " AND v.brand LIKE ?", criteria.getBrand());
+                addLikeFilter(where, filters, " AND v.model LIKE ?", criteria.getModel());
 
-			if (criteria.getUserId() != null)
-				countPs.setInt(idx++, criteria.getUserId());
-			if (criteria.getUserFirstName() != null && !criteria.getUserFirstName().isEmpty())
-				countPs.setString(idx++, "%" + criteria.getUserFirstName() + "%");
-			if (criteria.getUserLastName1() != null && !criteria.getUserLastName1().isEmpty())
-				countPs.setString(idx++, "%" + criteria.getUserLastName1() + "%");
-			if (criteria.getPhone() != null && !criteria.getPhone().isEmpty())
-				countPs.setString(idx++, "%" + criteria.getPhone() + "%");
+                String countSql = "SELECT COUNT(1) " + from.toString() + where.toString();
 
-			if (criteria.getVehicleId() != null)
-				countPs.setInt(idx++, criteria.getVehicleId());
-			if (criteria.getBrand() != null && !criteria.getBrand().isEmpty())
-				countPs.setString(idx++, "%" + criteria.getBrand() + "%");
-			if (criteria.getLicensePlate() != null && !criteria.getLicensePlate().isEmpty())
-				countPs.setString(idx++, "%" + criteria.getLicensePlate() + "%");
-			if (criteria.getModel() != null && !criteria.getModel().isEmpty())
-				countPs.setString(idx++, "%" + criteria.getModel() + "%");
+                int page = criteria.getSafePage();
+                int pageSize = criteria.getSafePageSize();
+                int total;
 
-			try (ResultSet rs = countPs.executeQuery()) {
-				if (rs.next()) {
-					totalRecords = rs.getInt(1);
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("Error executing rental total count", e);
-			throw new DataException("Error executing total count", e);
-		}
+                try (PreparedStatement ps = connection.prepareStatement(countSql)) {
+                        bindFilters(ps, filters);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                total = rs.next() ? rs.getInt(1) : 0;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing rental count", method, e);
+                        throw new DataException("Error executing rental count", e);
+                }
 
-		results.setResults(list);
-		results.setPageNumber(pageNumber);
-		results.setPageSize(pageSize);
-		results.setTotalRecords(totalRecords);
-		return results;
-	}
+                if (total == 0) {
+                        results.setItems(Collections.<RentalDTO>emptyList());
+                        results.setPage(page);
+                        results.setPageSize(pageSize);
+                        results.setTotal(total);
+                        results.normalize();
+                        return results;
+                }
 
-	private void setRentalParameters(PreparedStatement ps, RentalDTO rental, boolean isUpdate) throws SQLException {
-		if (!isUpdate) {
-			ps.setInt(1, rental.getReservationId());
-			ps.setTimestamp(2, Timestamp.valueOf(rental.getStartDateEffective()));
-			ps.setTimestamp(3, Timestamp.valueOf(rental.getEndDateEffective()));
-			ps.setInt(4, rental.getInitialKm());
-			ps.setInt(5, rental.getFinalKm());
-			ps.setInt(6, rental.getRentalStatusId());
-			ps.setBigDecimal(7, rental.getTotalCost() != null ? rental.getTotalCost() : BigDecimal.ZERO);
-			ps.setInt(8, rental.getPickupHeadquartersId());
-			ps.setInt(9, rental.getReturnHeadquartersId());
-		} else {
-			ps.setTimestamp(1, Timestamp.valueOf(rental.getStartDateEffective()));
-			ps.setTimestamp(2, Timestamp.valueOf(rental.getEndDateEffective()));
-			ps.setInt(3, rental.getInitialKm());
-			ps.setInt(4, rental.getFinalKm());
-			ps.setInt(5, rental.getRentalStatusId());
-			ps.setBigDecimal(6, rental.getTotalCost() != null ? rental.getTotalCost() : BigDecimal.ZERO);
-			ps.setInt(7, rental.getPickupHeadquartersId());
-			ps.setInt(8, rental.getReturnHeadquartersId());
-			ps.setInt(9, rental.getRentalId());
-		}
-	}
+                int totalPages = (total + pageSize - 1) / pageSize;
+                if (page > totalPages) {
+                        page = totalPages;
+                }
+                int offset = (page - 1) * pageSize;
 
-	private RentalDTO loadRental(ResultSet rs) throws SQLException {
-		RentalDTO dto = new RentalDTO();
-		dto.setRentalId(rs.getInt("rental_id"));
-		dto.setReservationId(rs.getInt("reservation_id"));
-		dto.setStartDateEffective(rs.getTimestamp("start_date_effective").toLocalDateTime());
-		dto.setEndDateEffective(rs.getTimestamp("end_date_effective").toLocalDateTime());
-		dto.setInitialKm(rs.getInt("initial_km"));
-		dto.setFinalKm(rs.getInt("final_km"));
-		dto.setRentalStatusId(rs.getInt("rental_status_id"));
-		dto.setTotalCost(rs.getBigDecimal("total_cost"));
-		dto.setRentalStatusName(rs.getString("rentalStatusName"));
+                String orderColumn = resolveOrderColumn(criteria.getOrderBy());
+                String direction = criteria.getSafeOrderDir();
 
-		dto.setVehicleId(rs.getInt("vehicle_id"));
-		dto.setLicensePlate(rs.getString("license_plate"));
-		dto.setBrand(rs.getString("brand"));
-		dto.setModel(rs.getString("model"));
+                String selectSql = BASE_SELECT + where.toString() + " ORDER BY " + orderColumn + " " + direction
+                                + " LIMIT ? OFFSET ?";
 
-		dto.setUserId(rs.getInt("user_id"));
-		dto.setUserFirstName(rs.getString("userFirstName"));
-		dto.setUserLastName1(rs.getString("userLastName1"));
-		dto.setPhone(rs.getString("phone"));
+                List<RentalDTO> items = new ArrayList<RentalDTO>();
+                try (PreparedStatement ps = connection.prepareStatement(selectSql)) {
+                        int idx = bindFilters(ps, filters);
+                        ps.setInt(idx++, pageSize);
+                        ps.setInt(idx, offset);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                while (rs.next()) {
+                                        items.add(toRentalDTO(rs));
+                                }
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing rental search", method, e);
+                        throw new DataException("Error executing rental search", e);
+                }
 
-		dto.setPickupHeadquartersId(rs.getInt("pickup_headquarters_id"));
-		dto.setPickupHeadquartersName(rs.getString("pickupHeadquarters"));
-		dto.setReturnHeadquartersId(rs.getInt("return_headquarters_id"));
-		dto.setPickupHeadquartersName(rs.getString("returnHeadquarters"));
+                results.setItems(items);
+                results.setPage(page);
+                results.setPageSize(pageSize);
+                results.setTotal(total);
+                results.normalize();
+                return results;
+        }
 
-		Timestamp created = rs.getTimestamp("created_at");
-		if (created != null) {
-			dto.setCreatedAt(created.toLocalDateTime());
-		}
-		Timestamp updated = rs.getTimestamp("updated_at");
-		if (updated != null) {
-			dto.setUpdatedAt(updated.toLocalDateTime());
-		}
-		return dto;
-	}
+        @Override
+        public boolean existsByReservation(Connection connection, Integer reservationId) throws DataException {
+                final String method = "existsByReservation";
+                if (reservationId == null) {
+                        logger.warn("[{}] called with null reservation id", method);
+                        return false;
+                }
+                String sql = "SELECT 1 FROM rental WHERE reservation_id = ? LIMIT 1";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, reservationId.intValue());
+                        try (ResultSet rs = ps.executeQuery()) {
+                                return rs.next();
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error checking rentals for reservation {}", method, reservationId, e);
+                        throw new DataException("Error checking rentals by reservation", e);
+                }
+        }
 
-	@Override
-	public boolean existsByReservation(Integer reservationId) throws DataException {
-		final String sql = "SELECT COUNT(*) FROM rental WHERE reservation_id = ?";
-		try (Connection conn = JDBCUtils.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-			stmt.setInt(1, reservationId);
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
-					return rs.getInt(1) > 0;
-				}
-			}
-			return false;
-		} catch (SQLException e) {
-			logger.error("Error checking rental existence by reservation", e);
-			throw new DataException(e);
-		}
-	}
+        private void bindWrite(PreparedStatement ps, RentalDTO rental, boolean isUpdate) throws SQLException {
+                int idx = 1;
+                if (!isUpdate) {
+                        ps.setInt(idx++, rental.getReservationId());
+                }
+                setTimestamp(ps, idx++, rental.getStartDateEffective());
+                setTimestamp(ps, idx++, rental.getEndDateEffective());
+                ps.setInt(idx++, rental.getInitialKm());
+                ps.setInt(idx++, rental.getFinalKm());
+                ps.setInt(idx++, rental.getRentalStatusId());
+                BigDecimal cost = rental.getTotalCost();
+                ps.setBigDecimal(idx++, cost == null ? BigDecimal.ZERO : cost);
+                ps.setInt(idx++, rental.getPickupHeadquartersId());
+                ps.setInt(idx++, rental.getReturnHeadquartersId());
+                if (isUpdate) {
+                        ps.setInt(idx, rental.getRentalId());
+                }
+        }
+
+        private void addEqualsFilter(StringBuilder sql, List<Object> filters, String clause, Object value) {
+                if (value != null) {
+                        sql.append(clause);
+                        filters.add(value);
+                }
+        }
+
+        private void addRangeFilter(StringBuilder sql, List<Object> filters, String minClause, String maxClause, Object min,
+                        Object max) {
+                if (min != null) {
+                        sql.append(minClause);
+                        filters.add(min);
+                }
+                if (max != null) {
+                        sql.append(maxClause);
+                        filters.add(max);
+                }
+        }
+
+        private void addLikeFilter(StringBuilder sql, List<Object> filters, String clause, String value) {
+                if (value != null && !value.isEmpty()) {
+                        sql.append(clause);
+                        filters.add("%" + value + "%");
+                }
+        }
+
+        private int bindFilters(PreparedStatement ps, List<Object> filters) throws SQLException {
+                int idx = 1;
+                for (Object value : filters) {
+                        if (value instanceof Integer) {
+                                ps.setInt(idx++, ((Integer) value).intValue());
+                        } else if (value instanceof BigDecimal) {
+                                ps.setBigDecimal(idx++, (BigDecimal) value);
+                        } else if (value instanceof LocalDateTime) {
+                                setTimestamp(ps, idx++, (LocalDateTime) value);
+                        } else {
+                                ps.setObject(idx++, value);
+                        }
+                }
+                return idx;
+        }
+
+        private String resolveOrderColumn(String requested) {
+                String key = requested == null ? null : requested;
+                String column = ORDER_BY_COLUMNS.get(key);
+                return column != null ? column : "r.rental_id";
+        }
+
+        private static void setTimestamp(PreparedStatement ps, int index, LocalDateTime value) throws SQLException {
+                if (value == null) {
+                        ps.setNull(index, Types.TIMESTAMP);
+                } else {
+                        ps.setTimestamp(index, Timestamp.valueOf(value));
+                }
+        }
+
+        private RentalDTO toRentalDTO(ResultSet rs) throws SQLException {
+                RentalDTO dto = new RentalDTO();
+                dto.setRentalId(Integer.valueOf(rs.getInt("rental_id")));
+                dto.setReservationId(Integer.valueOf(rs.getInt("reservation_id")));
+                Timestamp start = rs.getTimestamp("start_date_effective");
+                dto.setStartDateEffective(start == null ? null : start.toLocalDateTime());
+                Timestamp end = rs.getTimestamp("end_date_effective");
+                dto.setEndDateEffective(end == null ? null : end.toLocalDateTime());
+                dto.setInitialKm(Integer.valueOf(rs.getInt("initial_km")));
+                dto.setFinalKm(Integer.valueOf(rs.getInt("final_km")));
+                dto.setRentalStatusId(Integer.valueOf(rs.getInt("rental_status_id")));
+                dto.setTotalCost(rs.getBigDecimal("total_cost"));
+                dto.setPickupHeadquartersId(Integer.valueOf(rs.getInt("pickup_headquarters_id")));
+                dto.setReturnHeadquartersId(Integer.valueOf(rs.getInt("return_headquarters_id")));
+                Timestamp created = rs.getTimestamp("created_at");
+                dto.setCreatedAt(created == null ? null : created.toLocalDateTime());
+                Timestamp updated = rs.getTimestamp("updated_at");
+                dto.setUpdatedAt(updated == null ? null : updated.toLocalDateTime());
+                dto.setVehicleId(Integer.valueOf(rs.getInt("vehicle_id")));
+                dto.setUserId(Integer.valueOf(rs.getInt("user_id")));
+                dto.setLicensePlate(rs.getString("license_plate"));
+                dto.setBrand(rs.getString("brand"));
+                dto.setModel(rs.getString("model"));
+                dto.setUserFirstName(rs.getString("user_first_name"));
+                dto.setUserLastName1(rs.getString("user_last_name1"));
+                dto.setPhone(rs.getString("user_phone"));
+                dto.setRentalStatusName(rs.getString("rental_status_name"));
+                dto.setPickupHeadquartersName(rs.getString("pickup_headquarters_name"));
+                return dto;
+        }
 }

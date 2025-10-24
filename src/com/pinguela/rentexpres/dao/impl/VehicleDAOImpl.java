@@ -1,12 +1,18 @@
 package com.pinguela.rentexpres.dao.impl;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,282 +22,346 @@ import com.pinguela.rentexpres.exception.DataException;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.model.VehicleCriteria;
 import com.pinguela.rentexpres.model.VehicleDTO;
-import com.pinguela.rentexpres.util.JDBCUtils;
 
 public class VehicleDAOImpl implements VehicleDAO {
 
-	private static final Logger logger = LogManager.getLogger(VehicleDAOImpl.class);
+        private static final Logger logger = LogManager.getLogger(VehicleDAOImpl.class);
 
-	private static final String VEHICLE_SELECT_BASE = String.join(" ",
-			"SELECT v.vehicle_id, v.brand, v.model, v.manufacture_year, v.daily_price,",
-			"v.license_plate, v.vin_number, v.current_mileage, v.vehicle_status_id,",
-			"v.category_id, v.current_headquarters_id, v.created_at, v.updated_at,",
-			"vc.category_name AS category_name", "FROM vehicle v",
-			"LEFT JOIN vehicle_category vc ON v.category_id = vc.category_id");
+        private static final String BASE_SELECT = String.join(" ",
+                        "SELECT v.vehicle_id, v.brand, v.model, v.manufacture_year, v.daily_price,",
+                        "       v.license_plate, v.vin_number, v.current_mileage, v.vehicle_status_id,",
+                        "       v.category_id, v.current_headquarters_id, v.created_at, v.updated_at",
+                        "FROM vehicle v");
 
-	// ---------------- FIND BY ID ----------------
-	@Override
-	public VehicleDTO findById(Connection connection, Integer id) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		VehicleDTO vehicle = null;
+        private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 
-		try (PreparedStatement ps = connection.prepareStatement(VEHICLE_SELECT_BASE + " WHERE v.vehicle_id = ?")) {
-			ps.setInt(1, id);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) {
-					vehicle = loadVehicle(rs);
-					logger.info("[{}] Vehicle found with id: {}", method, id);
-				} else {
-					logger.warn("[{}] No Vehicle found with id: {}", method, id);
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error finding Vehicle by id: {}", method, id, e);
-			throw new DataException("Error finding Vehicle by id", e);
-		}
+        private static Map<String, String> buildOrderColumns() {
+                Map<String, String> map = new HashMap<String, String>();
+                map.put("vehicle_id", "v.vehicle_id");
+                map.put("brand", "v.brand");
+                map.put("model", "v.model");
+                map.put("manufacture_year", "v.manufacture_year");
+                map.put("daily_price", "v.daily_price");
+                map.put("current_mileage", "v.current_mileage");
+                map.put("created_at", "v.created_at");
+                map.put("updated_at", "v.updated_at");
+                return map;
+        }
 
-		return vehicle;
-	}
+        @Override
+        public VehicleDTO findById(Connection connection, Integer id) throws DataException {
+                final String method = "findById";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return null;
+                }
+                String sql = BASE_SELECT + " WHERE v.vehicle_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        try (ResultSet rs = ps.executeQuery()) {
+                                if (rs.next()) {
+                                        logger.info("[{}] Vehicle found with id {}", method, id);
+                                        return toVehicleDTO(rs);
+                                }
+                        }
+                        logger.warn("[{}] No vehicle found with id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error finding vehicle id {}", method, id, e);
+                        throw new DataException("Error finding vehicle by id", e);
+                }
+                return null;
+        }
 
-	// ---------------- FIND ALL ----------------
-	@Override
-	public List<VehicleDTO> findAll(Connection connection) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		List<VehicleDTO> list = new ArrayList<>();
+        @Override
+        public List<VehicleDTO> findAll(Connection connection) throws DataException {
+                final String method = "findAll";
+                List<VehicleDTO> vehicles = new ArrayList<VehicleDTO>();
+                String sql = BASE_SELECT + " ORDER BY v.vehicle_id";
+                try (PreparedStatement ps = connection.prepareStatement(sql);
+                                ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                                vehicles.add(toVehicleDTO(rs));
+                        }
+                        logger.info("[{}] Retrieved {} vehicles", method, Integer.valueOf(vehicles.size()));
+                } catch (SQLException e) {
+                        logger.error("[{}] Error retrieving all vehicles", method, e);
+                        throw new DataException("Error retrieving all vehicles", e);
+                }
+                return vehicles;
+        }
 
-		try (PreparedStatement ps = connection.prepareStatement(VEHICLE_SELECT_BASE);
-				ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-				list.add(loadVehicle(rs));
-			}
-			logger.info("[{}] Total vehicles found: {}", method, list.size());
-		} catch (SQLException e) {
-			logger.error("[{}] Error retrieving all vehicles", method, e);
-			throw new DataException("Error retrieving all vehicles", e);
-		}
+        @Override
+        public boolean create(Connection connection, VehicleDTO vehicle) throws DataException {
+                final String method = "create";
+                if (vehicle == null) {
+                        logger.warn("[{}] called with null vehicle", method);
+                        return false;
+                }
 
-		return list;
-	}
+                String sql = "INSERT INTO vehicle (brand, model, manufacture_year, daily_price, license_plate, vin_number,"
+                                + " current_mileage, vehicle_status_id, category_id, current_headquarters_id, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
-	// ---------------- CREATE ----------------
-	@Override
-	public boolean create(Connection connection, VehicleDTO v) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		if (v == null) {
-			logger.warn("[{}] called with null Vehicle.", method);
-			return false;
-		}
+                try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                        bindWrite(ps, vehicle, false);
+                        if (ps.executeUpdate() > 0) {
+                                try (ResultSet keys = ps.getGeneratedKeys()) {
+                                        if (keys.next()) {
+                                                vehicle.setVehicleId(Integer.valueOf(keys.getInt(1)));
+                                        }
+                                }
+                                logger.info("[{}] Created vehicle id {}", method, vehicle.getVehicleId());
+                                return true;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error creating vehicle", method, e);
+                        throw new DataException("Error creating vehicle", e);
+                }
+                return false;
+        }
 
-		String sql = "INSERT INTO vehicle (brand, model, manufacture_year, daily_price, "
-				+ "license_plate, vin_number, current_mileage, vehicle_status_id, "
-				+ "category_id, current_headquarters_id, created_at) " + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        @Override
+        public boolean update(Connection connection, VehicleDTO vehicle) throws DataException {
+                final String method = "update";
+                if (vehicle == null || vehicle.getVehicleId() == null) {
+                        logger.warn("[{}] called with null vehicle or id", method);
+                        return false;
+                }
+                String sql = "UPDATE vehicle SET brand = ?, model = ?, manufacture_year = ?, daily_price = ?,"
+                                + " license_plate = ?, vin_number = ?, current_mileage = ?, vehicle_status_id = ?,"
+                                + " category_id = ?, current_headquarters_id = ?, updated_at = NOW() WHERE vehicle_id = ?";
 
-		try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-			setVehicleParameters(ps, v, false);
-			int affected = ps.executeUpdate();
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        bindWrite(ps, vehicle, true);
+                        int updated = ps.executeUpdate();
+                        if (updated > 0) {
+                                logger.info("[{}] Updated vehicle id {}", method, vehicle.getVehicleId());
+                                return true;
+                        }
+                        logger.warn("[{}] No vehicle updated for id {}", method, vehicle.getVehicleId());
+                } catch (SQLException e) {
+                        logger.error("[{}] Error updating vehicle id {}", method, vehicle.getVehicleId(), e);
+                        throw new DataException("Error updating vehicle", e);
+                }
+                return false;
+        }
 
-			if (affected > 0) {
-				try (ResultSet keys = ps.getGeneratedKeys()) {
-					if (keys.next()) {
-						v.setVehicleId(keys.getInt(1));
-					}
-				}
-				logger.info("[{}] Vehicle created successfully, id: {}", method, v.getVehicleId());
-				return true;
-			}
+        @Override
+        public boolean delete(Connection connection, Integer id) throws DataException {
+                final String method = "delete";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return false;
+                }
+                String sql = "DELETE FROM vehicle WHERE vehicle_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        int rows = ps.executeUpdate();
+                        if (rows > 0) {
+                                logger.info("[{}] Vehicle {} deleted", method, id);
+                                return true;
+                        }
+                        logger.warn("[{}] No vehicle deleted for id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error deleting vehicle id {}", method, id, e);
+                        throw new DataException("Error deleting vehicle", e);
+                }
+                return false;
+        }
 
-		} catch (SQLException e) {
-			logger.error("[{}] Error creating vehicle", method, e);
-			throw new DataException("Error creating vehicle", e);
-		}
+        @Override
+        public Results<VehicleDTO> findByCriteria(Connection connection, VehicleCriteria criteria) throws DataException {
+                final String method = "findByCriteria";
+                if (criteria == null) {
+                        criteria = new VehicleCriteria();
+                }
+                criteria.normalize();
 
-		return false;
-	}
+                Results<VehicleDTO> results = new Results<VehicleDTO>();
+                List<Object> filters = new ArrayList<Object>();
 
-	// ---------------- UPDATE ----------------
-	@Override
-	public boolean update(Connection connection, VehicleDTO v) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		if (v == null || v.getVehicleId() == null) {
-			logger.warn("[{}] called with null vehicle or missing id.", method);
-			return false;
-		}
+                StringBuilder from = new StringBuilder(BASE_SELECT.substring(BASE_SELECT.indexOf("FROM")));
+                StringBuilder where = new StringBuilder(" WHERE 1=1");
 
-		String sql = "UPDATE vehicle SET brand=?, model=?, manufacture_year=?, daily_price=?, "
-				+ "license_plate=?, vin_number=?, current_mileage=?, vehicle_status_id=?, "
-				+ "category_id=?, current_headquarters_id=?, updated_at=NOW() " + "WHERE vehicle_id=?";
+                if (criteria.getVehicleId() != null) {
+                        where.append(" AND v.vehicle_id = ?");
+                        filters.add(criteria.getVehicleId());
+                }
+                if (criteria.getBrand() != null) {
+                        where.append(" AND v.brand LIKE ?");
+                        filters.add(like(criteria.getBrand()));
+                }
+                if (criteria.getModel() != null) {
+                        where.append(" AND v.model LIKE ?");
+                        filters.add(like(criteria.getModel()));
+                }
+                if (criteria.getCategoryId() != null) {
+                        where.append(" AND v.category_id = ?");
+                        filters.add(criteria.getCategoryId());
+                }
+                if (criteria.getVehicleStatusId() != null) {
+                        where.append(" AND v.vehicle_status_id = ?");
+                        filters.add(criteria.getVehicleStatusId());
+                }
+                if (criteria.getManufactureYearFrom() != null) {
+                        where.append(" AND v.manufacture_year >= ?");
+                        filters.add(criteria.getManufactureYearFrom());
+                }
+                if (criteria.getManufactureYearTo() != null) {
+                        where.append(" AND v.manufacture_year <= ?");
+                        filters.add(criteria.getManufactureYearTo());
+                }
+                if (criteria.getDailyPriceMin() != null) {
+                        where.append(" AND v.daily_price >= ?");
+                        filters.add(criteria.getDailyPriceMin());
+                }
+                if (criteria.getDailyPriceMax() != null) {
+                        where.append(" AND v.daily_price <= ?");
+                        filters.add(criteria.getDailyPriceMax());
+                }
+                if (criteria.getCurrentHeadquartersId() != null) {
+                        where.append(" AND v.current_headquarters_id = ?");
+                        filters.add(criteria.getCurrentHeadquartersId());
+                }
 
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			setVehicleParameters(ps, v, true);
-			int rows = ps.executeUpdate();
-			if (rows > 0) {
-				logger.info("[{}] Vehicle updated successfully, id: {}", method, v.getVehicleId());
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error updating vehicle", method, e);
-			throw new DataException("Error updating vehicle", e);
-		}
+                String countSql = "SELECT COUNT(1) " + from.toString() + where.toString();
 
-		return false;
-	}
+                int page = criteria.getSafePage();
+                int pageSize = criteria.getSafePageSize();
+                int total;
 
-	// ---------------- DELETE ----------------
-	@Override
-	public boolean delete(Connection connection, Integer id) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		String sql = "DELETE FROM vehicle WHERE vehicle_id = ?";
-		try (PreparedStatement ps = connection.prepareStatement(sql)) {
-			ps.setInt(1, id);
-			int rows = ps.executeUpdate();
-			if (rows > 0) {
-				logger.info("[{}] Vehicle deleted, id: {}", method, id);
-				return true;
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error deleting vehicle", method, e);
-			throw new DataException("Error deleting vehicle", e);
-		}
-		return false;
-	}
+                try (PreparedStatement ps = connection.prepareStatement(countSql)) {
+                        bindFilters(ps, filters);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                total = rs.next() ? rs.getInt(1) : 0;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing vehicle count", method, e);
+                        throw new DataException("Error executing vehicle count", e);
+                }
 
-	// ---------------- FIND BY CRITERIA ----------------
-	@Override
-	public Results<VehicleDTO> findByCriteria(Connection connection, VehicleCriteria criteria) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-		Results<VehicleDTO> results = new Results<>();
-		List<VehicleDTO> list = new ArrayList<>();
+                if (total == 0) {
+                        results.setItems(Collections.<VehicleDTO>emptyList());
+                        results.setPage(page);
+                        results.setPageSize(pageSize);
+                        results.setTotal(total);
+                        results.normalize();
+                        return results;
+                }
 
-		int pageNumber = criteria.getPageNumber();
-		int pageSize = criteria.getPageSize();
-		int offset = (pageNumber - 1) * pageSize;
+                int totalPages = (total + pageSize - 1) / pageSize;
+                if (page > totalPages) {
+                        page = totalPages;
+                }
+                int offset = (page - 1) * pageSize;
 
-		StringBuilder sql = new StringBuilder(VEHICLE_SELECT_BASE);
-		sql.append(" WHERE 1=1 ");
+                String orderColumn = resolveOrderColumn(criteria.getOrderBy());
+                String direction = criteria.getSafeOrderDir();
 
-		if (criteria.getBrand() != null && !criteria.getBrand().isEmpty())
-			sql.append(" AND v.brand LIKE ? ");
-		if (criteria.getModel() != null && !criteria.getModel().isEmpty())
-			sql.append(" AND v.model LIKE ? ");
-		if (criteria.getManufactureYearFrom() != null)
-			sql.append(" AND v.manufacture_year >= ? ");
-		if (criteria.getManufactureYearTo() != null)
-			sql.append(" AND v.manufacture_year <= ? ");
-		if (criteria.getDailyPriceMin() != null)
-			sql.append(" AND v.daily_price >= ? ");
-		if (criteria.getDailyPriceMax() != null)
-			sql.append(" AND v.daily_price <= ? ");
-		if (criteria.getVehicleStatusId() != null)
-			sql.append(" AND v.vehicle_status_id = ? ");
-		if (criteria.getCategoryId() != null)
-			sql.append(" AND v.category_id = ? ");
-		if (criteria.getCurrentHeadquartersId() != null)
-			sql.append(" AND v.current_headquarters_id = ? ");
+                String selectSql = BASE_SELECT + where.toString() + " ORDER BY " + orderColumn + " " + direction
+                                + " LIMIT ? OFFSET ?";
 
-		sql.append(" ORDER BY v.brand, v.model ");
+                List<VehicleDTO> items = new ArrayList<VehicleDTO>();
+                try (PreparedStatement ps = connection.prepareStatement(selectSql)) {
+                        int idx = bindFilters(ps, filters);
+                        ps.setInt(idx++, pageSize);
+                        ps.setInt(idx, offset);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                while (rs.next()) {
+                                        items.add(toVehicleDTO(rs));
+                                }
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing vehicle search", method, e);
+                        throw new DataException("Error executing vehicle search", e);
+                }
 
-		try (PreparedStatement ps = connection.prepareStatement(sql.toString(), ResultSet.TYPE_SCROLL_INSENSITIVE,
-				ResultSet.CONCUR_READ_ONLY)) {
+                results.setItems(items);
+                results.setPage(page);
+                results.setPageSize(pageSize);
+                results.setTotal(total);
+                results.normalize();
+                return results;
+        }
 
-			int idx = 1;
-			if (criteria.getBrand() != null && !criteria.getBrand().isEmpty())
-				ps.setString(idx++, "%" + criteria.getBrand() + "%");
-			if (criteria.getModel() != null && !criteria.getModel().isEmpty())
-				ps.setString(idx++, "%" + criteria.getModel() + "%");
-			if (criteria.getManufactureYearFrom() != null)
-				ps.setInt(idx++, criteria.getManufactureYearFrom());
-			if (criteria.getManufactureYearTo() != null)
-				ps.setInt(idx++, criteria.getManufactureYearTo());
-			if (criteria.getDailyPriceMin() != null)
-				ps.setBigDecimal(idx++, criteria.getDailyPriceMin());
-			if (criteria.getDailyPriceMax() != null)
-				ps.setBigDecimal(idx++, criteria.getDailyPriceMax());
-			if (criteria.getVehicleStatusId() != null)
-				ps.setInt(idx++, criteria.getVehicleStatusId());
-			if (criteria.getCategoryId() != null)
-				ps.setInt(idx++, criteria.getCategoryId());
-			if (criteria.getCurrentHeadquartersId() != null)
-				ps.setInt(idx++, criteria.getCurrentHeadquartersId());
+        @Override
+        public void updateStatus(Connection connection, Integer vehicleId, Integer statusId) throws DataException {
+                final String method = "updateStatus";
+                if (vehicleId == null || statusId == null) {
+                        logger.warn("[{}] called with null parameters", method);
+                        return;
+                }
+                String sql = "UPDATE vehicle SET vehicle_status_id = ?, updated_at = NOW() WHERE vehicle_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, statusId.intValue());
+                        ps.setInt(2, vehicleId.intValue());
+                        ps.executeUpdate();
+                } catch (SQLException e) {
+                        logger.error("[{}] Error updating vehicle {} status", method, vehicleId, e);
+                        throw new DataException("Error updating vehicle status", e);
+                }
+        }
 
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.absolute(offset + 1)) {
-					int count = 0;
-					do {
-						list.add(loadVehicle(rs));
-						count++;
-					} while (count < pageSize && rs.next());
-				}
-				rs.last();
-				results.setTotalRecords(rs.getRow());
-			}
+        private static String like(String value) {
+                return value == null ? null : "%" + value + "%";
+        }
 
-			results.setResults(list);
-			results.setPageNumber(pageNumber);
-			results.setPageSize(pageSize);
-			logger.info("[{}] findByCriteria completed: Page {} (Size {}), Total: {}", method, pageNumber, pageSize,
-					results.getTotalRecords());
+        private void bindWrite(PreparedStatement ps, VehicleDTO vehicle, boolean isUpdate) throws SQLException {
+                int idx = 1;
+                ps.setString(idx++, vehicle.getBrand());
+                ps.setString(idx++, vehicle.getModel());
+                ps.setInt(idx++, vehicle.getManufactureYear());
+                ps.setBigDecimal(idx++, vehicle.getDailyPrice());
+                ps.setString(idx++, vehicle.getLicensePlate());
+                ps.setString(idx++, vehicle.getVinNumber());
+                ps.setInt(idx++, vehicle.getCurrentMileage());
+                ps.setInt(idx++, vehicle.getVehicleStatusId());
+                ps.setInt(idx++, vehicle.getCategoryId());
+                ps.setInt(idx++, vehicle.getCurrentHeadquartersId());
+                if (isUpdate) {
+                        ps.setInt(idx, vehicle.getVehicleId());
+                }
+        }
 
-		} catch (SQLException e) {
-			logger.error("[{}] Error in findByCriteria Vehicle", method, e);
-			throw new DataException("Error in findByCriteria Vehicle", e);
-		}
+        private int bindFilters(PreparedStatement ps, List<Object> filters) throws SQLException {
+                int idx = 1;
+                for (Object value : filters) {
+                        if (value instanceof String) {
+                                ps.setString(idx++, (String) value);
+                        } else if (value instanceof Integer) {
+                                ps.setInt(idx++, ((Integer) value).intValue());
+                        } else if (value instanceof BigDecimal) {
+                                ps.setBigDecimal(idx++, (BigDecimal) value);
+                        } else {
+                                ps.setObject(idx++, value);
+                        }
+                }
+                return idx;
+        }
 
-		return results;
-	}
+        private String resolveOrderColumn(String requested) {
+                String key = requested == null ? null : requested;
+                String column = ORDER_BY_COLUMNS.get(key);
+                return column != null ? column : "v.vehicle_id";
+        }
 
-	// ---------------- PRIVATE HELPERS ----------------
-	private VehicleDTO loadVehicle(ResultSet rs) throws SQLException {
-		VehicleDTO v = new VehicleDTO();
-		v.setVehicleId(rs.getInt("vehicle_id"));
-		v.setBrand(rs.getString("brand"));
-		v.setModel(rs.getString("model"));
-		v.setManufactureYear(rs.getInt("manufacture_year"));
-		v.setDailyPrice(rs.getBigDecimal("daily_price"));
-		v.setLicensePlate(rs.getString("license_plate"));
-		v.setVinNumber(rs.getString("vin_number"));
-		v.setCurrentMileage(rs.getInt("current_mileage"));
-		v.setVehicleStatusId(rs.getInt("vehicle_status_id"));
-		v.setCategoryId(rs.getInt("category_id"));
-		v.setCurrentHeadquartersId(rs.getInt("current_headquarters_id"));
-		v.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
-		v.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
-		return v;
-	}
-
-	private void setVehicleParameters(PreparedStatement ps, VehicleDTO v, boolean isUpdate) throws SQLException {
-		ps.setString(1, v.getBrand());
-		ps.setString(2, v.getModel());
-		ps.setInt(3, v.getManufactureYear());
-		ps.setBigDecimal(4, v.getDailyPrice());
-		ps.setString(5, v.getLicensePlate());
-		ps.setString(6, v.getVinNumber());
-		ps.setInt(7, v.getCurrentMileage());
-		ps.setInt(8, v.getVehicleStatusId());
-		ps.setInt(9, v.getCategoryId());
-		ps.setInt(10, v.getCurrentHeadquartersId());
-		if (isUpdate)
-			ps.setInt(11, v.getVehicleId());
-	}
-
-	@Override
-	public void updateStatus(Connection connection, Integer vehicleId, Integer statusId) throws DataException {
-		PreparedStatement ps = null;
-		try {
-			ps = connection.prepareStatement("UPDATE vehicle SET vehicle_status_id = ? WHERE vehicle_id = ?");
-			ps.setInt(1, statusId);
-			ps.setInt(2, vehicleId);
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			throw new DataException("Error actualizando estado del vehículo", e);
-		} finally {
-			JDBCUtils.close(ps, null);
-		}
-
-	}
+        private VehicleDTO toVehicleDTO(ResultSet rs) throws SQLException {
+                VehicleDTO dto = new VehicleDTO();
+                dto.setVehicleId(Integer.valueOf(rs.getInt("vehicle_id")));
+                dto.setBrand(rs.getString("brand"));
+                dto.setModel(rs.getString("model"));
+                dto.setManufactureYear(Integer.valueOf(rs.getInt("manufacture_year")));
+                dto.setDailyPrice(rs.getBigDecimal("daily_price"));
+                dto.setLicensePlate(rs.getString("license_plate"));
+                dto.setVinNumber(rs.getString("vin_number"));
+                dto.setCurrentMileage(Integer.valueOf(rs.getInt("current_mileage")));
+                dto.setVehicleStatusId(Integer.valueOf(rs.getInt("vehicle_status_id")));
+                dto.setCategoryId(Integer.valueOf(rs.getInt("category_id")));
+                dto.setCurrentHeadquartersId(Integer.valueOf(rs.getInt("current_headquarters_id")));
+                Timestamp created = rs.getTimestamp("created_at");
+                dto.setCreatedAt(created == null ? null : created.toLocalDateTime());
+                Timestamp updated = rs.getTimestamp("updated_at");
+                dto.setUpdatedAt(updated == null ? null : updated.toLocalDateTime());
+                return dto;
+        }
 }

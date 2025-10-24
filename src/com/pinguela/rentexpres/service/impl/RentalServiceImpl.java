@@ -188,14 +188,22 @@ public class RentalServiceImpl implements RentalService {
 		return results;
 	}
 
-	@Override
-	public boolean existsByReservation(Integer reservationId) throws RentexpresException {
-		try {
-			return rentalDAO.existsByReservation(reservationId);
-		} catch (DataException e) {
-			throw new RentexpresException("Error checking rental existence for reservation ID " + reservationId, e);
-		}
-	}
+        @Override
+        public boolean existsByReservation(Integer reservationId) throws RentexpresException {
+                try {
+                        connection = JDBCUtils.getConnection();
+                        JDBCUtils.beginTransaction(connection);
+                        boolean exists = rentalDAO.existsByReservation(connection, reservationId);
+                        JDBCUtils.commitTransaction(connection);
+                        return exists;
+                } catch (SQLException | DataException e) {
+                        JDBCUtils.rollbackTransaction(connection);
+                        throw new RentexpresException(
+                                        "Error checking rental existence for reservation ID " + reservationId, e);
+                } finally {
+                        JDBCUtils.close(connection);
+                }
+        }
 
 	@Override
 	public void createFromReservation(ReservationDTO reservation) throws RentexpresException {
