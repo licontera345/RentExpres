@@ -19,153 +19,165 @@ public class CityDAOImpl implements CityDAO {
 
     private static final Logger logger = LogManager.getLogger(CityDAOImpl.class);
 
-    private static final String BASE_SELECT = "SELECT city_id, city_name, province_id FROM city";
+    private static final String BASE_SELECT = String.join(" ",
+            "SELECT c.city_id AS city_id,",
+            "       c.city_name AS city_name,",
+            "       c.province_id AS province_id",
+            "FROM city c");
 
     @Override
-    public CityDTO findById(Connection c, Integer id) throws DataException {
-        final String method = new Object(){}.getClass().getEnclosingMethod().getName();
-        String sql = BASE_SELECT + " WHERE city_id = ?";
-        try (PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, id);
+    public CityDTO findById(Connection connection, Integer id) throws DataException {
+        final String method = "findById";
+        if (id == null) {
+            logger.warn("[{}] called with null id", method);
+            return null;
+        }
+        String sql = BASE_SELECT + " WHERE c.city_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id.intValue());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    CityDTO city = loadCity(rs);
                     logger.info("[{}] City found with id: {}", method, id);
-                    return city;
-                } else {
-                    logger.warn("[{}] No city found with id: {}", method, id);
-                    return null;
+                    return loadCity(rs);
                 }
             }
-        } catch (SQLException ex) {
-            logger.error("[{}] Error finding city by id: {}", method, id, ex);
-            throw new DataException("Error finding city by id", ex);
+            logger.warn("[{}] No city found with id: {}", method, id);
+        } catch (SQLException e) {
+            logger.error("[{}] Error finding city by id: {}", method, id, e);
+            throw new DataException(e);
         }
+        return null;
     }
 
     @Override
-    public List<CityDTO> findAll(Connection c) throws DataException {
-        final String method = new Object(){}.getClass().getEnclosingMethod().getName();
-        List<CityDTO> cities = new ArrayList<>();
-
-        try (PreparedStatement ps = c.prepareStatement(BASE_SELECT);
-             ResultSet rs = ps.executeQuery()) {
-
+    public List<CityDTO> findAll(Connection connection) throws DataException {
+        final String method = "findAll";
+        List<CityDTO> cities = new ArrayList<CityDTO>();
+        String sql = BASE_SELECT + " ORDER BY c.city_name";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 cities.add(loadCity(rs));
             }
-            logger.info("[{}] {} cities found.", method, cities.size());
-            return cities;
-
-        } catch (SQLException ex) {
-            logger.error("[{}] Error listing cities", method, ex);
-            throw new DataException("Error listing cities", ex);
+            logger.info("[{}] {} cities found.", method, Integer.valueOf(cities.size()));
+        } catch (SQLException e) {
+            logger.error("[{}] Error listing cities", method, e);
+            throw new DataException(e);
         }
+        return cities;
     }
 
     @Override
-    public List<CityDTO> findByProvinceId(Connection c, Integer provinceId) throws DataException {
-        final String method = new Object(){}.getClass().getEnclosingMethod().getName();
-        String sql = BASE_SELECT + " WHERE province_id = ? ORDER BY city_name";
-
-        try (PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, provinceId);
+    public List<CityDTO> findByProvinceId(Connection connection, Integer provinceId) throws DataException {
+        final String method = "findByProvinceId";
+        if (provinceId == null) {
+            logger.warn("[{}] called with null province id", method);
+            return new ArrayList<CityDTO>();
+        }
+        List<CityDTO> cities = new ArrayList<CityDTO>();
+        String sql = BASE_SELECT + " WHERE c.province_id = ? ORDER BY c.city_name";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, provinceId.intValue());
             try (ResultSet rs = ps.executeQuery()) {
-                List<CityDTO> cities = new ArrayList<>();
                 while (rs.next()) {
                     cities.add(loadCity(rs));
                 }
-                logger.info("[{}] {} cities found for province id: {}", method, cities.size(), provinceId);
-                return cities;
             }
-        } catch (SQLException ex) {
-            logger.error("[{}] Error finding cities by province id: {}", method, provinceId, ex);
-            throw new DataException("Error finding cities by province id", ex);
+            logger.info("[{}] {} cities found for province id: {}", method, Integer.valueOf(cities.size()), provinceId);
+        } catch (SQLException e) {
+            logger.error("[{}] Error finding cities by province id: {}", method, provinceId, e);
+            throw new DataException(e);
         }
+        return cities;
     }
 
     @Override
-    public boolean create(Connection c, CityDTO city) throws DataException {
-        final String method = new Object(){}.getClass().getEnclosingMethod().getName();
+    public boolean create(Connection connection, CityDTO city) throws DataException {
+        final String method = "create";
+        if (city == null) {
+            logger.warn("[{}] called with null city", method);
+            return false;
+        }
         String sql = "INSERT INTO city (city_name, province_id) VALUES (?, ?)";
-
-        try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setCityParameters(ps, city, false);
             int rows = ps.executeUpdate();
             if (rows > 0) {
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (keys.next()) {
-                        city.setId(keys.getInt(1));
+                        city.setCityId(Integer.valueOf(keys.getInt(1)));
                     }
                 }
-                logger.info("[{}] City created successfully with id: {}", method, city.getId());
+                logger.info("[{}] City created successfully with id: {}", method, city.getCityId());
                 return true;
-            } else {
-                logger.warn("[{}] No city created.", method);
-                return false;
             }
-        } catch (SQLException ex) {
-            logger.error("[{}] Error creating city: {}", method, ex.getMessage(), ex);
-            throw new DataException("Error creating city", ex);
+            logger.warn("[{}] No city created", method);
+            return false;
+        } catch (SQLException e) {
+            logger.error("[{}] Error creating city", method, e);
+            throw new DataException(e);
         }
     }
 
     @Override
-    public boolean update(Connection c, CityDTO city) throws DataException {
-        final String method = new Object(){}.getClass().getEnclosingMethod().getName();
+    public boolean update(Connection connection, CityDTO city) throws DataException {
+        final String method = "update";
+        if (city == null || city.getCityId() == null) {
+            logger.warn("[{}] called with null city or id", method);
+            return false;
+        }
         String sql = "UPDATE city SET city_name = ?, province_id = ? WHERE city_id = ?";
-
-        try (PreparedStatement ps = c.prepareStatement(sql)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             setCityParameters(ps, city, true);
             int rows = ps.executeUpdate();
             if (rows > 0) {
-                logger.info("[{}] City updated successfully (id: {}).", method, city.getId());
+                logger.info("[{}] City updated successfully (id: {})", method, city.getCityId());
                 return true;
-            } else {
-                logger.warn("[{}] No city updated for id: {}", method, city.getId());
-                return false;
             }
-        } catch (SQLException ex) {
-            logger.error("[{}] Error updating city: {}", method, ex.getMessage(), ex);
-            throw new DataException("Error updating city", ex);
+            logger.warn("[{}] No city updated for id: {}", method, city.getCityId());
+            return false;
+        } catch (SQLException e) {
+            logger.error("[{}] Error updating city id {}", method, city.getCityId(), e);
+            throw new DataException(e);
         }
     }
 
     @Override
-    public boolean delete(Connection c, CityDTO city) throws DataException {
-        final String method = new Object(){}.getClass().getEnclosingMethod().getName();
+    public boolean delete(Connection connection, CityDTO city) throws DataException {
+        final String method = "delete";
+        if (city == null || city.getCityId() == null) {
+            logger.warn("[{}] called with null city or id", method);
+            return false;
+        }
         String sql = "DELETE FROM city WHERE city_id = ?";
-
-        try (PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, city.getId());
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, city.getCityId().intValue());
             int rows = ps.executeUpdate();
             if (rows > 0) {
-                logger.info("[{}] City deleted successfully (id: {}).", method, city.getId());
+                logger.info("[{}] City deleted successfully (id: {})", method, city.getCityId());
                 return true;
-            } else {
-                logger.warn("[{}] No city deleted for id: {}", method, city.getId());
-                return false;
             }
-        } catch (SQLException ex) {
-            logger.error("[{}] Error deleting city: {}", method, ex.getMessage(), ex);
-            throw new DataException("Error deleting city", ex);
+            logger.warn("[{}] No city deleted for id: {}", method, city.getCityId());
+            return false;
+        } catch (SQLException e) {
+            logger.error("[{}] Error deleting city id {}", method, city.getCityId(), e);
+            throw new DataException(e);
         }
     }
 
-    // ---------- Private helpers ----------
     private CityDTO loadCity(ResultSet rs) throws SQLException {
-        CityDTO c = new CityDTO();
-        c.setId(rs.getInt("city_id"));
-        c.setCityName(rs.getString("city_name"));
-        c.setProvinceId(rs.getInt("province_id"));
-        return c;
+        CityDTO dto = new CityDTO();
+        dto.setCityId(Integer.valueOf(rs.getInt("city_id")));
+        dto.setCityName(rs.getString("city_name"));
+        dto.setProvinceId(Integer.valueOf(rs.getInt("province_id")));
+        return dto;
     }
 
     private void setCityParameters(PreparedStatement ps, CityDTO city, boolean isUpdate) throws SQLException {
         ps.setString(1, city.getCityName());
-        ps.setInt(2, city.getProvinceId());
+        ps.setInt(2, city.getProvinceId().intValue());
         if (isUpdate) {
-            ps.setInt(3, city.getId());
+            ps.setInt(3, city.getCityId().intValue());
         }
     }
 }

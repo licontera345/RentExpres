@@ -1,6 +1,9 @@
 package com.pinguela.rentexpres.dao.impl;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,62 +18,89 @@ public class ReservationStatusDAOImpl implements ReservationStatusDAO {
 
     private static final Logger logger = LogManager.getLogger(ReservationStatusDAOImpl.class);
 
-    // LEFT JOIN con filtro por ISO en la condición del JOIN (no en WHERE) → permite fallback
-    private static final String SELECT_I18N =
-        "SELECT rs.reservation_status_id, " +
-        "       COALESCE(rsl.translated_name, rs.status_name) AS status_name " +
-        "FROM reservation_status rs " +
-        "LEFT JOIN reservation_status_language rsl " +
-        "       ON rsl.reservation_status_id = rs.reservation_status_id " +
-        "LEFT JOIN language l " +
-        "       ON l.language_id = rsl.language_id AND l.iso_code = ? ";
+    private static final String BASE_SELECT = String.join(" ",
+            "SELECT rs.reservation_status_id AS reservation_status_id,",
+            "       rs.status_name AS status_name",
+            "FROM reservation_status rs");
+
+    private static final String I18N_SELECT = String.join(" ",
+            "SELECT rs.reservation_status_id AS reservation_status_id,",
+            "       COALESCE(rsl.translated_name, rs.status_name) AS status_name",
+            "FROM reservation_status rs",
+            "LEFT JOIN language l ON l.iso_code = ?",
+            "LEFT JOIN reservation_status_language rsl",
+            "       ON rsl.reservation_status_id = rs.reservation_status_id AND rsl.language_id = l.language_id");
 
     @Override
-    public ReservationStatusDTO findById(Connection c, Integer id, String isoCode) throws DataException {
-        final String sql = SELECT_I18N + "WHERE rs.reservation_status_id = ?";
-
-        try (PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, normalizeIso(isoCode));  // si llega null → JOIN no matchea → fallback
-            ps.setInt(2, id);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? load(rs) : null;
-            }
-        } catch (SQLException e) {
-            logger.error("[ReservationStatusDAO.findById] id={}, iso={}", id, isoCode, e);
-            throw new DataException("Error finding ReservationStatus by id (i18n)", e);
+    public ReservationStatusDTO findById(Connection connection, Integer id, String isoCode) throws DataException {
+        final String method = "findById";
+        if (id == null) {
+            logger.warn("[{}] called with null id", method);
+            return null;
         }
+        String normalizedIso = normalizeIso(isoCode);
+        StringBuilder sql = new StringBuilder(normalizedIso != null ? I18N_SELECT : BASE_SELECT);
+        sql.append(" WHERE rs.reservation_status_id = ?");
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            int idx = 1;
+            if (normalizedIso != null) {
+                ps.setString(idx++, normalizedIso);
+            }
+            ps.setInt(idx, id.intValue());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return load(rs);
+                }
+            }
+            logger.warn("[{}] No reservation status found id {}", method, id);
+        } catch (SQLException e) {
+            logger.error("[{}] Error finding reservation status id {}", method, id, e);
+            throw new DataException(e);
+        }
+        return null;
     }
 
     @Override
-    public List<ReservationStatusDTO> findAll(Connection c, String isoCode) throws DataException {
-        final String sql = SELECT_I18N + "ORDER BY rs.reservation_status_id";
-        List<ReservationStatusDTO> out = new ArrayList<>();
-
-        try (PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, normalizeIso(isoCode));  // null → base.status_name
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(load(rs));
+    public List<ReservationStatusDTO> findAll(Connection connection, String isoCode) throws DataException {
+        final String method = "findAll";
+        String normalizedIso = normalizeIso(isoCode);
+        StringBuilder sql = new StringBuilder(normalizedIso != null ? I18N_SELECT : BASE_SELECT);
+        sql.append(" ORDER BY rs.reservation_status_id");
+        List<ReservationStatusDTO> results = new ArrayList<ReservationStatusDTO>();
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            if (normalizedIso != null) {
+                ps.setString(1, normalizedIso);
             }
-            return out;
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    results.add(load(rs));
+                }
+            }
+            logger.info("[{}] {} reservation statuses found", method, Integer.valueOf(results.size()));
         } catch (SQLException e) {
-            logger.error("[ReservationStatusDAO.findAll] iso={}", isoCode, e);
-            throw new DataException("Error listing ReservationStatus (i18n)", e);
+            logger.error("[{}] Error listing reservation statuses", method, e);
+            throw new DataException(e);
         }
+        return results;
     }
 
-    // ---- helpers ----
     private ReservationStatusDTO load(ResultSet rs) throws SQLException {
         ReservationStatusDTO dto = new ReservationStatusDTO();
-        dto.setReservationStatusId(rs.getInt("reservation_status_id"));
+        dto.setReservationStatusId(Integer.valueOf(rs.getInt("reservation_status_id")));
         dto.setStatusName(rs.getString("status_name"));
         return dto;
     }
 
     private String normalizeIso(String iso) {
-        if (iso == null || iso.isBlank()) return null; // así forzamos fallback si no viene ISO
-        String v = iso.trim();
-        int p = v.indexOf('-');
-        return (p > 0 ? v.substring(0, p) : v).toLowerCase();
+        if (iso == null) {
+            return null;
+        }
+        String trimmed = iso.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        int dash = trimmed.indexOf('-');
+        String base = dash > 0 ? trimmed.substring(0, dash) : trimmed;
+        return base.toLowerCase();
     }
 }
