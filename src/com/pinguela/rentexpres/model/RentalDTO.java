@@ -27,16 +27,31 @@ public class RentalDTO extends ValueObject {
 	private ReservationDTO reservation;
 	private HeadquartersDTO pickupHeadquarters;
 	private HeadquartersDTO returnHeadquarters;
-	private Integer vehicleId;
-	private String licensePlate;
-	private String brand;
-	private String model;
-	private String rentalStatusName;
+        private Integer vehicleId; // derived via reservation.vehicle_id
+
+        /** Maximum length: 255 characters. */
+        private String licensePlate; // derived from vehicle.license_plate
+
+        /** Maximum length: 255 characters. */
+        private String brand; // derived from vehicle.brand
+
+        /** Maximum length: 255 characters. */
+        private String model; // derived from vehicle.model
+
+        /** Maximum length: 50 characters. */
+        private String rentalStatusName; // derived from rental_status.status_name
 	private Integer userId;
-	private String userFirstName;
-	private String userLastName1;
-	private String phone;
-	private String pickupHeadquartersName;
+        /** Maximum length: 255 characters. */
+        private String userFirstName; // derived from user.first_name
+
+        /** Maximum length: 45 characters. */
+        private String userLastName1; // derived from user.last_name1
+
+        /** Maximum length: 20 characters. */
+        private String phone; // derived from user.phone
+
+        /** Maximum length: 80 characters. */
+        private String pickupHeadquartersName; // derived from headquarters.name
 
 	// super();
 	public RentalDTO() {
