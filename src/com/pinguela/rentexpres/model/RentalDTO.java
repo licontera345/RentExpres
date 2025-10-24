@@ -40,7 +40,7 @@ public class RentalDTO extends ValueObject {
 
         /** Maximum length: 50 characters. */
         private String rentalStatusName; // derived from rental_status.status_name
-	private Integer userId;
+        private Integer userId; // derived via reservation.user_id
         /** Maximum length: 255 characters. */
         private String userFirstName; // derived from user.first_name
 
