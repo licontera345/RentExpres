@@ -7,11 +7,13 @@ public class VehicleCategoryDTO extends ValueObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer categoryId; // vehicle_category.category_id
-	private String categoryName; // vehicle_category.category_name
+        private static final long serialVersionUID = 1L;
+        private Integer categoryId; // vehicle_category.category_id
 
-	private List<LanguageDTO> language;
+        /** Maximum length: 50 characters. */
+        private String categoryName; // vehicle_category.category_name
+
+        private List<VehicleCategoryLanguageDTO> translations;
 
 	public VehicleCategoryDTO() {
 		super();
@@ -33,12 +35,12 @@ public class VehicleCategoryDTO extends ValueObject {
 		this.categoryName = categoryName;
 	}
 
-	public List<LanguageDTO> getLanguage() {
-		return language;
-	}
+        public List<VehicleCategoryLanguageDTO> getTranslations() {
+            return translations;
+        }
 
-	public void setLanguage(List<LanguageDTO> language) {
-		this.language = language;
-	}
+        public void setTranslations(List<VehicleCategoryLanguageDTO> translations) {
+            this.translations = translations;
+        }
 
 }
