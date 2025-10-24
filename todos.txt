@@ -1,0 +1,35 @@
+en backend 
+le paso el lenguage de mi tabla como parametro al service y hago el metodo para que llame al codigo iso de lamguage y 
+busque el que yo le pido y me mande los datos con de la tabla con el idioma que pedi 
+
+
+
+
+en app web frontend
+
+lenguage servlet
+
+1/ comprobar a ver si cliente manda cookie de locale 
+
+si la manda no hago nada si lo tiene en la session o lo meto en la session
+
+ si no la manda comprueba extraigo de la cabeserqa accect lenguage revviso la cabezera de la lista ordenada de los locales preferidos
+   (request.getheader"accect.lenguage") del navegador
+   
+   
+ para cada uno de ellos busco si lo tengo 
+ 
+ 
+ 
+  si lo tengo soportado lo meto en la session
+  
+  
+  si no encuentro ninguno de la lista de preferido le meto en la session el por defecto
+  
+
+  
+  
+  
+  
+  
+  
