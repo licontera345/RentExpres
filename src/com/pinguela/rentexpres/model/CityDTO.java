@@ -5,10 +5,14 @@ public class CityDTO extends ValueObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer Id; // city.city_id
-	private String cityName; // city.city_name
-	private Integer provinceId;
+        private static final long serialVersionUID = 1L;
+
+        private Integer cityId; // city.city_id
+
+        /** Maximum length: 255 characters. */
+        private String cityName; // city.city_name
+
+        private Integer provinceId; // city.province_id
 
 	private ProvinceDTO province;
 
@@ -16,29 +20,37 @@ public class CityDTO extends ValueObject {
 		super();
 	}
 
-	public Integer getProvinceId() {
-		return provinceId;
-	}
+        public Integer getProvinceId() {
+            return provinceId;
+        }
 
-	public void setProvinceId(Integer provinceId) {
-		this.provinceId = provinceId;
-	}
+        public void setProvinceId(Integer provinceId) {
+            this.provinceId = provinceId;
+        }
 
-	public Integer getId() {
-		return Id;
-	}
+        public Integer getCityId() {
+            return cityId;
+        }
 
-	public void setId(Integer Id) {
-		this.Id = Id;
-	}
+        public void setCityId(Integer cityId) {
+            this.cityId = cityId;
+        }
 
-	public String getCityName() {
-		return cityName;
-	}
+        public Integer getId() {
+            return cityId;
+        }
 
-	public void setCityName(String cityName) {
-		this.cityName = cityName;
-	}
+        public void setId(Integer id) {
+            this.cityId = id;
+        }
+
+        public String getCityName() {
+            return cityName;
+        }
+
+        public void setCityName(String cityName) {
+            this.cityName = cityName;
+        }
 
 	public ProvinceDTO getProvince() {
 		return province;

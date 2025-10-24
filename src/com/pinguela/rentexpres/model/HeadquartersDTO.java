@@ -1,47 +1,61 @@
 package com.pinguela.rentexpres.model;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public class HeadquartersDTO extends ValueObject {
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	
-	private Integer Id; // headquarters.headquarters_id
-	private String name; // headquarters.name
-	private String phone; // headquarters.phone
-	private String email; // headquarters.email
-	private Integer addressId;
-	private LocalDateTime createdAt; // headquarters.created_at
-	private LocalDateTime updatedAt; // headquarters.updated_at
+        private static final long serialVersionUID = 1L;
 
-	// addressDTO
-	private List<AddressDTO> addresses;
-	private CityDTO city;
-	private ProvinceDTO province;
+        private Integer headquartersId; // headquarters.headquarters_id
+
+        /** Maximum length: 80 characters. */
+        private String name; // headquarters.name
+
+        /** Maximum length: 30 characters. */
+        private String phone; // headquarters.phone
+
+        /** Maximum length: 120 characters. */
+        private String email; // headquarters.email
+
+        private Integer addressId; // headquarters.address_id
+        private LocalDateTime createdAt; // headquarters.created_at
+        /** Nullable audit column. */
+        private LocalDateTime updatedAt; // headquarters.updated_at
+
+        private AddressDTO address;
+        private CityDTO city;
+        private ProvinceDTO province;
 
 	public HeadquartersDTO() {
 		super();
 	}
 
-	public Integer getAddressId() {
-		return addressId;
-	}
+        public Integer getAddressId() {
+            return addressId;
+        }
 
-	public void setAddressId(Integer addressId) {
-		this.addressId = addressId;
-	}
+        public void setAddressId(Integer addressId) {
+            this.addressId = addressId;
+        }
 
-	public Integer getId() {
-		return Id;
-	}
+        public Integer getHeadquartersId() {
+            return headquartersId;
+        }
 
-	public void setId(Integer id) {
-		Id = id;
-	}
+        public void setHeadquartersId(Integer headquartersId) {
+            this.headquartersId = headquartersId;
+        }
+
+        public Integer getId() {
+            return headquartersId;
+        }
+
+        public void setId(Integer id) {
+            this.headquartersId = id;
+        }
 
 	public String getName() {
 		return name;
@@ -83,13 +97,13 @@ public class HeadquartersDTO extends ValueObject {
 		this.updatedAt = updatedAt;
 	}
 
-	public List<AddressDTO> getAddresses() {
-		return addresses;
-	}
+        public AddressDTO getAddress() {
+            return address;
+        }
 
-	public void setAddresses(List<AddressDTO> addresses) {
-		this.addresses = addresses;
-	}
+        public void setAddress(AddressDTO address) {
+            this.address = address;
+        }
 
 	public CityDTO getCity() {
 		return city;

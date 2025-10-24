@@ -1,73 +1,156 @@
 package com.pinguela.rentexpres.model;
 
+import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 
-public class Results<T> extends ValueObject {
-	/**
-	 *  
-	 */
-	private static final long serialVersionUID = 1L;
+public final class Results<T> implements Serializable {
 
-	private List<T> results;
-	private Integer pageNumber;
-	private Integer pageSize;
-	private Integer totalRecords;
-	private Integer totalPages;
+        private static final long serialVersionUID = 1L;
 
-	public Results() {
-		super();
-	}
+        private List<T> items;
+        private int page;
+        private int pageSize;
+        private int total;
+        private int totalPages;
+        private boolean hasPrev;
+        private boolean hasNext;
+        private int fromRow;
+        private int toRow;
 
-	public List<T> getResults() {
-		return results;
-	}
+        public Results() {
+                super();
+        }
 
-	public void setResults(List<T> results) {
-		this.results = results;
-	}
+        public List<T> getItems() {
+                return items;
+        }
 
-	public Integer getPageNumber() {
-		return pageNumber;
-	}
+        public void setItems(List<T> items) {
+                this.items = items;
+        }
 
-	public void setPageNumber(Integer pageNumber) {
-		this.pageNumber = pageNumber;
-	}
+        public List<T> getResults() {
+                return items;
+        }
 
-	public Integer getPageSize() {
-		return pageSize;
-	}
+        public void setResults(List<T> results) {
+                this.items = results;
+        }
 
-	public void setPageSize(Integer pageSize) {
-		this.pageSize = pageSize;
-	}
+        public int getPage() {
+                return page;
+        }
 
-	public Integer getTotalRecords() {
-		return totalRecords;
-	}
+        public void setPage(int page) {
+                this.page = page;
+        }
 
-	public void setTotalRecords(Integer totalRecords) {
-		this.totalRecords = totalRecords;
-	}
+        public Integer getPageNumber() {
+                return Integer.valueOf(page);
+        }
 
-	public Integer getTotalPages() {
-		if (totalPages != null) {
-			return totalPages;
-		}
+        public void setPageNumber(Integer pageNumber) {
+                this.page = pageNumber == null ? 0 : pageNumber.intValue();
+        }
 
-		if (pageSize == null || pageSize <= 0 || totalRecords == null) {
-			return 0;
-		}
+        public int getPageSize() {
+                return pageSize;
+        }
 
-		int pages = totalRecords / pageSize;
-		if (totalRecords % pageSize != 0) {
-			pages++;
-		}
-		return pages;
-	}
+        public void setPageSize(int pageSize) {
+                this.pageSize = pageSize;
+        }
 
-	public void setTotalPages(Integer totalPages) {
-		this.totalPages = totalPages;
-	}
+        public Integer getPageSizeObject() {
+                return Integer.valueOf(pageSize);
+        }
 
+        public void setPageSize(Integer pageSize) {
+                this.pageSize = pageSize == null ? 0 : pageSize.intValue();
+        }
+
+        public int getTotal() {
+                return total;
+        }
+
+        public void setTotal(int total) {
+                this.total = total;
+        }
+
+        public Integer getTotalRecords() {
+                return Integer.valueOf(total);
+        }
+
+        public void setTotalRecords(Integer totalRecords) {
+                this.total = totalRecords == null ? 0 : totalRecords.intValue();
+        }
+
+        public int getTotalPages() {
+                return totalPages;
+        }
+
+        public void setTotalPages(int totalPages) {
+                this.totalPages = totalPages;
+        }
+
+        public boolean isHasPrev() {
+                return hasPrev;
+        }
+
+        public void setHasPrev(boolean hasPrev) {
+                this.hasPrev = hasPrev;
+        }
+
+        public boolean isHasNext() {
+                return hasNext;
+        }
+
+        public void setHasNext(boolean hasNext) {
+                this.hasNext = hasNext;
+        }
+
+        public int getFromRow() {
+                return fromRow;
+        }
+
+        public void setFromRow(int fromRow) {
+                this.fromRow = fromRow;
+        }
+
+        public int getToRow() {
+                return toRow;
+        }
+
+        public void setToRow(int toRow) {
+                this.toRow = toRow;
+        }
+
+        public void normalize() {
+                if (items == null) {
+                        items = Collections.<T>emptyList();
+                }
+                if (page < 1) {
+                        page = 1;
+                }
+                if (pageSize != 10 && pageSize != 20 && pageSize != 25 && pageSize != 50 && pageSize != 100) {
+                        pageSize = 20;
+                }
+                if (total < 0) {
+                        total = 0;
+                }
+                totalPages = (total == 0) ? 1 : ((total + pageSize - 1) / pageSize);
+                if (page > totalPages) {
+                        page = totalPages;
+                }
+                hasPrev = page > 1;
+                hasNext = page < totalPages;
+                if (total == 0) {
+                        fromRow = 0;
+                        toRow = 0;
+                } else {
+                        fromRow = (page - 1) * pageSize + 1;
+                        toRow = Math.min(page * pageSize, total);
+                }
+        }
 }

@@ -1,215 +1,135 @@
 package com.pinguela.rentexpres.model;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
-/**
- * Criteria class to dynamically filter vehicles. Each non-null field will
- * generate a WHERE condition in DAO queries.
- */
-public class VehicleCriteria extends ValueObject {
+public class VehicleCriteria extends CriteriaBase {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	private Integer vehicleId; // vehicle.vehicle_id
-	private Integer vehicleStatusId; // FK → vehicle_status.vehicle_status_id
-	private Integer categoryId; // FK → vehicle_category.category_id
-	private Integer currentHeadquartersId; // FK → headquarters.headquarters_id
+        private static final long serialVersionUID = 1L;
 
-	private String brand; // vehicle.brand
-	private String model; // vehicle.model
-	private String licensePlate; // vehicle.license_plate
-	private String vinNumber; // vehicle.vin_number
+        private static final Set<String> ORDERABLE = new HashSet<String>(
+                        Arrays.asList("vehicle_id", "brand", "model", "manufacture_year", "daily_price", "current_mileage",
+                                        "created_at", "updated_at"));
 
-	private Integer manufactureYearFrom; // vehicle.manufacture_year >= ...
-	private Integer manufactureYearTo; // vehicle.manufacture_year <= ...
-	private BigDecimal dailyPriceMin; // vehicle.daily_price >= ...
-	private BigDecimal dailyPriceMax; // vehicle.daily_price <= ...
-	private Integer currentMileageMin; // vehicle.current_mileage >= ...
-	private Integer currentMileageMax; // vehicle.current_mileage <= ...
+        private Integer vehicleId;
+        private String brand;
+        private String model;
+        private Integer categoryId;
+        private Integer vehicleStatusId;
+        private Integer manufactureYearFrom;
+        private Integer manufactureYearTo;
+        private BigDecimal dailyPriceMin;
+        private BigDecimal dailyPriceMax;
+        private Integer currentHeadquartersId;
 
-	private Boolean activeStatus; // optional, if you add logical state
+        public VehicleCriteria() {
+                super();
+        }
 
-	private Integer pageNumber;
-	private Integer pageSize;
+        public Integer getVehicleId() {
+                return vehicleId;
+        }
 
-	private LocalDateTime createdAtFrom;
-	private LocalDateTime createdAtTo;
-	private LocalDateTime updatedAtFrom;
-	private LocalDateTime updatedAtTo;
+        public void setVehicleId(Integer vehicleId) {
+                this.vehicleId = vehicleId;
+        }
 
-	public VehicleCriteria() {
-		super();
-	}
+        public String getBrand() {
+                return brand;
+        }
 
-	public Integer getVehicleId() {
-		return vehicleId;
-	}
+        public void setBrand(String brand) {
+                this.brand = trimToNull(brand);
+        }
 
-	public void setVehicleId(Integer vehicleId) {
-		this.vehicleId = vehicleId;
-	}
+        public String getModel() {
+                return model;
+        }
 
-	public Integer getVehicleStatusId() {
-		return vehicleStatusId;
-	}
+        public void setModel(String model) {
+                this.model = trimToNull(model);
+        }
 
-	public void setVehicleStatusId(Integer vehicleStatusId) {
-		this.vehicleStatusId = vehicleStatusId;
-	}
+        public Integer getCategoryId() {
+                return categoryId;
+        }
 
-	public Integer getCategoryId() {
-		return categoryId;
-	}
+        public void setCategoryId(Integer categoryId) {
+                this.categoryId = categoryId;
+        }
 
-	public void setCategoryId(Integer categoryId) {
-		this.categoryId = categoryId;
-	}
+        public Integer getVehicleStatusId() {
+                return vehicleStatusId;
+        }
 
-	public Integer getCurrentHeadquartersId() {
-		return currentHeadquartersId;
-	}
+        public void setVehicleStatusId(Integer vehicleStatusId) {
+                this.vehicleStatusId = vehicleStatusId;
+        }
 
-	public void setCurrentHeadquartersId(Integer currentHeadquartersId) {
-		this.currentHeadquartersId = currentHeadquartersId;
-	}
+        public Integer getManufactureYearFrom() {
+                return manufactureYearFrom;
+        }
 
-	public String getBrand() {
-		return brand;
-	}
+        public void setManufactureYearFrom(Integer manufactureYearFrom) {
+                this.manufactureYearFrom = manufactureYearFrom;
+        }
 
-	public void setBrand(String brand) {
-		this.brand = brand;
-	}
+        public Integer getManufactureYearTo() {
+                return manufactureYearTo;
+        }
 
-	public String getModel() {
-		return model;
-	}
+        public void setManufactureYearTo(Integer manufactureYearTo) {
+                this.manufactureYearTo = manufactureYearTo;
+        }
 
-	public void setModel(String model) {
-		this.model = model;
-	}
+        public BigDecimal getDailyPriceMin() {
+                return dailyPriceMin;
+        }
 
-	public String getLicensePlate() {
-		return licensePlate;
-	}
+        public void setDailyPriceMin(BigDecimal dailyPriceMin) {
+                this.dailyPriceMin = dailyPriceMin;
+        }
 
-	public void setLicensePlate(String licensePlate) {
-		this.licensePlate = licensePlate;
-	}
+        public BigDecimal getDailyPriceMax() {
+                return dailyPriceMax;
+        }
 
-	public String getVinNumber() {
-		return vinNumber;
-	}
+        public void setDailyPriceMax(BigDecimal dailyPriceMax) {
+                this.dailyPriceMax = dailyPriceMax;
+        }
 
-	public void setVinNumber(String vinNumber) {
-		this.vinNumber = vinNumber;
-	}
+        public Integer getCurrentHeadquartersId() {
+                return currentHeadquartersId;
+        }
 
-	public Integer getManufactureYearFrom() {
-		return manufactureYearFrom;
-	}
+        public void setCurrentHeadquartersId(Integer currentHeadquartersId) {
+                this.currentHeadquartersId = currentHeadquartersId;
+        }
 
-	public void setManufactureYearFrom(Integer manufactureYearFrom) {
-		this.manufactureYearFrom = manufactureYearFrom;
-	}
+        public boolean isOrderable(String column) {
+                return column != null && ORDERABLE.contains(column);
+        }
 
-	public Integer getManufactureYearTo() {
-		return manufactureYearTo;
-	}
+        public String getSafeOrderBy() {
+                String column = getOrderBy();
+                return isOrderable(column) ? column : "vehicle_id";
+        }
 
-	public void setManufactureYearTo(Integer manufactureYearTo) {
-		this.manufactureYearTo = manufactureYearTo;
-	}
-
-	public BigDecimal getDailyPriceMin() {
-		return dailyPriceMin;
-	}
-
-	public void setDailyPriceMin(BigDecimal dailyPriceMin) {
-		this.dailyPriceMin = dailyPriceMin;
-	}
-
-	public BigDecimal getDailyPriceMax() {
-		return dailyPriceMax;
-	}
-
-	public void setDailyPriceMax(BigDecimal dailyPriceMax) {
-		this.dailyPriceMax = dailyPriceMax;
-	}
-
-	public Integer getCurrentMileageMin() {
-		return currentMileageMin;
-	}
-
-	public void setCurrentMileageMin(Integer currentMileageMin) {
-		this.currentMileageMin = currentMileageMin;
-	}
-
-	public Integer getCurrentMileageMax() {
-		return currentMileageMax;
-	}
-
-	public void setCurrentMileageMax(Integer currentMileageMax) {
-		this.currentMileageMax = currentMileageMax;
-	}
-
-	public Boolean getActiveStatus() {
-		return activeStatus;
-	}
-
-	public void setActiveStatus(Boolean activeStatus) {
-		this.activeStatus = activeStatus;
-	}
-
-	public Integer getPageNumber() {
-		return pageNumber;
-	}
-
-	public void setPageNumber(Integer pageNumber) {
-		this.pageNumber = pageNumber;
-	}
-
-	public Integer getPageSize() {
-		return pageSize;
-	}
-
-	public void setPageSize(Integer pageSize) {
-		this.pageSize = pageSize;
-	}
-
-	public LocalDateTime getCreatedAtFrom() {
-		return createdAtFrom;
-	}
-
-	public void setCreatedAtFrom(LocalDateTime createdAtFrom) {
-		this.createdAtFrom = createdAtFrom;
-	}
-
-	public LocalDateTime getCreatedAtTo() {
-		return createdAtTo;
-	}
-
-	public void setCreatedAtTo(LocalDateTime createdAtTo) {
-		this.createdAtTo = createdAtTo;
-	}
-
-	public LocalDateTime getUpdatedAtFrom() {
-		return updatedAtFrom;
-	}
-
-	public void setUpdatedAtFrom(LocalDateTime updatedAtFrom) {
-		this.updatedAtFrom = updatedAtFrom;
-	}
-
-	public LocalDateTime getUpdatedAtTo() {
-		return updatedAtTo;
-	}
-
-	public void setUpdatedAtTo(LocalDateTime updatedAtTo) {
-		this.updatedAtTo = updatedAtTo;
-	}
-
+        @Override
+        public void normalize() {
+                super.normalize();
+                if (manufactureYearFrom != null && manufactureYearTo != null
+                                && manufactureYearFrom.intValue() > manufactureYearTo.intValue()) {
+                        Integer tmp = manufactureYearFrom;
+                        manufactureYearFrom = manufactureYearTo;
+                        manufactureYearTo = tmp;
+                }
+                if (dailyPriceMin != null && dailyPriceMax != null && dailyPriceMin.compareTo(dailyPriceMax) > 0) {
+                        BigDecimal tmp = dailyPriceMin;
+                        dailyPriceMin = dailyPriceMax;
+                        dailyPriceMax = tmp;
+                }
+        }
 }

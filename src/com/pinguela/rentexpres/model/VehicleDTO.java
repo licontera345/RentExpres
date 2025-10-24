@@ -2,32 +2,40 @@ package com.pinguela.rentexpres.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-
 public class VehicleDTO extends ValueObject {
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer vehicleId; // vehicle.vehicle_id
-	private String brand; // vehicle.brand
-	private String model; // vehicle.model
-	private Integer manufactureYear; // vehicle.manufacture_year
-	private BigDecimal dailyPrice; // vehicle.daily_price
-	private String licensePlate; // vehicle.license_plate
-	private String vinNumber; // vehicle.vin_number
-	private Integer currentMileage; // vehicle.current_mileage
-	private Integer vehicleStatusId;
-	private Integer categoryId;
-	private Integer currentHeadquartersId;
-	private LocalDateTime createdAt; // vehicle.created_at
-	private LocalDateTime updatedAt; // vehicle.updated_at
+        private static final long serialVersionUID = 1L;
+        private Integer vehicleId; // vehicle.vehicle_id
 
-	// para inner join
-	private List<VehicleStatusDTO> vehicleStatus;
-	private List<VehicleCategoryDTO> vehicleCategory;
-	private List<HeadquartersDTO> currentHeadquarters;
+        /** Maximum length: 255 characters. */
+        private String brand; // vehicle.brand
+
+        /** Maximum length: 255 characters. */
+        private String model; // vehicle.model
+
+        private Integer manufactureYear; // vehicle.manufacture_year
+        private BigDecimal dailyPrice; // vehicle.daily_price
+
+        /** Maximum length: 255 characters. */
+        private String licensePlate; // vehicle.license_plate
+
+        /** Maximum length: 17 characters. */
+        private String vinNumber; // vehicle.vin_number
+
+        private Integer currentMileage; // vehicle.current_mileage
+        private Integer vehicleStatusId; // vehicle.vehicle_status_id
+        private Integer categoryId; // vehicle.category_id
+        private Integer currentHeadquartersId; // vehicle.current_headquarters_id
+        private LocalDateTime createdAt; // vehicle.created_at
+        /** Nullable audit column. */
+        private LocalDateTime updatedAt; // vehicle.updated_at
+
+        private VehicleStatusDTO vehicleStatus;
+        private VehicleCategoryDTO vehicleCategory;
+        private HeadquartersDTO currentHeadquarters;
 
 	public VehicleDTO() {
 		super();
@@ -137,29 +145,29 @@ public class VehicleDTO extends ValueObject {
 		this.updatedAt = updatedAt;
 	}
 
-	public List<VehicleStatusDTO> getVehicleStatus() {
-		return vehicleStatus;
-	}
+        public VehicleStatusDTO getVehicleStatus() {
+            return vehicleStatus;
+        }
 
-	public void setVehicleStatus(List<VehicleStatusDTO> vehicleStatus) {
-		this.vehicleStatus = vehicleStatus;
-	}
+        public void setVehicleStatus(VehicleStatusDTO vehicleStatus) {
+            this.vehicleStatus = vehicleStatus;
+        }
 
-	public List<VehicleCategoryDTO> getVehicleCategory() {
-		return vehicleCategory;
-	}
+        public VehicleCategoryDTO getVehicleCategory() {
+            return vehicleCategory;
+        }
 
-	public void setVehicleCategory(List<VehicleCategoryDTO> vehicleCategory) {
-		this.vehicleCategory = vehicleCategory;
-	}
+        public void setVehicleCategory(VehicleCategoryDTO vehicleCategory) {
+            this.vehicleCategory = vehicleCategory;
+        }
 
-	public List<HeadquartersDTO> getCurrentHeadquarters() {
-		return currentHeadquarters;
-	}
+        public HeadquartersDTO getCurrentHeadquarters() {
+            return currentHeadquarters;
+        }
 
-	public void setCurrentHeadquarters(List<HeadquartersDTO> currentHeadquarters) {
-		this.currentHeadquarters = currentHeadquarters;
-	}
+        public void setCurrentHeadquarters(HeadquartersDTO currentHeadquarters) {
+            this.currentHeadquarters = currentHeadquarters;
+        }
 
 
 }

@@ -7,21 +7,38 @@ public class EmployeeDTO extends ValueObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = 1L;
 
-	private Integer Id; // employee.employee_id
-	private String employeeName; // employee.employee_name
-	private String password; // employee.password
-	private Integer roleId;
-	private Integer headquartersId;
-	private String firstName; // employee.first_name
-	private String lastName1; // employee.last_name1
-	private String lastName2; // employee.last_name2
-	private String email; // employee.email
-	private String phone; // employee.phone
+        private Integer employeeId; // employee.employee_id
+
+        /** Maximum length: 255 characters. */
+        private String employeeName; // employee.employee_name
+
+        /** Maximum length: 255 characters. */
+        private String password; // employee.password
+
+        private Integer roleId; // employee.role_id
+
+        private Integer headquartersId; // employee.headquarters_id
+
+        /** Maximum length: 255 characters. */
+        private String firstName; // employee.first_name
+
+        /** Maximum length: 255 characters. */
+        private String lastName1; // employee.last_name1
+
+        /** Nullable. Maximum length: 255 characters. */
+        private String lastName2; // employee.last_name2
+
+        /** Maximum length: 255 characters. */
+        private String email; // employee.email
+
+        /** Maximum length: 50 characters. */
+        private String phone; // employee.phone
 	private Boolean activeStatus; // employee.active_status (tinyint 1/0)
 	private LocalDateTime createdAt; // employee.created_at
-	private LocalDateTime updatedAt; // employee.updated_at
+        /** Nullable audit column. */
+        private LocalDateTime updatedAt; // employee.updated_at
 
 	private HeadquartersDTO headquarters;
 	private RoleDTO role;
@@ -41,29 +58,37 @@ public class EmployeeDTO extends ValueObject {
 	}
 
 
-	public Integer getRoleId() {
-		return roleId;
-	}
+    public Integer getRoleId() {
+        return roleId;
+    }
 
-	public void setRoleId(Integer roleId) {
-		this.roleId = roleId;
-	}
+    public void setRoleId(Integer roleId) {
+        this.roleId = roleId;
+    }
 
-	public Integer getHeadquartersId() {
-		return headquartersId;
-	}
+    public Integer getHeadquartersId() {
+        return headquartersId;
+    }
 
-	public void setHeadquartersId(Integer headquartersId) {
-		this.headquartersId = headquartersId;
-	}
+    public void setHeadquartersId(Integer headquartersId) {
+        this.headquartersId = headquartersId;
+    }
 
-	public Integer getId() {
-		return Id;
-	}
+    public Integer getEmployeeId() {
+        return employeeId;
+    }
 
-	public void setId(Integer Id) {
-		this.Id = Id;
-	}
+    public void setEmployeeId(Integer employeeId) {
+        this.employeeId = employeeId;
+    }
+
+    public Integer getId() {
+        return employeeId;
+    }
+
+    public void setId(Integer id) {
+        this.employeeId = id;
+    }
 
 	public String getEmployeeName() {
 		return employeeName;
