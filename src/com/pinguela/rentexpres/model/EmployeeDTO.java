@@ -27,7 +27,7 @@ public class EmployeeDTO extends ValueObject {
         /** Maximum length: 255 characters. */
         private String lastName1; // employee.last_name1
 
-        /** Maximum length: 255 characters. */
+        /** Nullable. Maximum length: 255 characters. */
         private String lastName2; // employee.last_name2
 
         /** Maximum length: 255 characters. */
@@ -37,7 +37,8 @@ public class EmployeeDTO extends ValueObject {
         private String phone; // employee.phone
 	private Boolean activeStatus; // employee.active_status (tinyint 1/0)
 	private LocalDateTime createdAt; // employee.created_at
-	private LocalDateTime updatedAt; // employee.updated_at
+        /** Nullable audit column. */
+        private LocalDateTime updatedAt; // employee.updated_at
 
 	private HeadquartersDTO headquarters;
 	private RoleDTO role;

@@ -17,6 +17,7 @@ public class ReservationDTO extends ValueObject {
         private LocalDateTime startDate; // reservation.start_date
         private LocalDateTime endDate; // reservation.end_date
         private LocalDateTime createdAt; // reservation.created_at
+        /** Nullable audit column. */
         private LocalDateTime updatedAt; // reservation.updated_at
 
         // relational objects (for joins)

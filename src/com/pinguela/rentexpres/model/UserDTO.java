@@ -19,7 +19,7 @@ public class UserDTO extends ValueObject {
         /** Maximum length: 45 characters. */
         private String lastName1; // user.last_name1
 
-        /** Maximum length: 45 characters. */
+        /** Nullable. Maximum length: 45 characters. */
         private String lastName2; // user.last_name2
 
         private LocalDate birthDate; // user.birth_date
@@ -38,6 +38,7 @@ public class UserDTO extends ValueObject {
         private Integer addressId; // user.address_id
         private Boolean activeStatus; // user.active_status (tinyint 1/0)
         private LocalDateTime createdAt; // user.created_at
+        /** Nullable audit column. */
         private LocalDateTime updatedAt; // user.updated_at
 
         private RoleDTO role;

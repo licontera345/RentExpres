@@ -30,6 +30,7 @@ public class VehicleDTO extends ValueObject {
         private Integer categoryId; // vehicle.category_id
         private Integer currentHeadquartersId; // vehicle.current_headquarters_id
         private LocalDateTime createdAt; // vehicle.created_at
+        /** Nullable audit column. */
         private LocalDateTime updatedAt; // vehicle.updated_at
 
         private VehicleStatusDTO vehicleStatus;

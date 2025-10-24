@@ -22,6 +22,7 @@ public class HeadquartersDTO extends ValueObject {
 
         private Integer addressId; // headquarters.address_id
         private LocalDateTime createdAt; // headquarters.created_at
+        /** Nullable audit column. */
         private LocalDateTime updatedAt; // headquarters.updated_at
 
         private AddressDTO address;

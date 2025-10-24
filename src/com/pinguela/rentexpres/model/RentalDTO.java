@@ -20,7 +20,8 @@ public class RentalDTO extends ValueObject {
 	private Integer pickupHeadquartersId; // FK → headquarters.headquarters_id
 	private Integer returnHeadquartersId; // FK → headquarters.headquarters_id
 	private LocalDateTime createdAt; // rental.created_at
-	private LocalDateTime updatedAt; // rental.updated_at
+        /** Nullable audit column. */
+        private LocalDateTime updatedAt; // rental.updated_at
 
 	// Optional relational objects (for joins or criteria)
 	private RentalStatusDTO rentalStatus;
