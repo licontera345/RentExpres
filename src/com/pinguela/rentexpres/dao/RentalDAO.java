@@ -24,7 +24,7 @@ public interface RentalDAO {
 
 	boolean delete(Connection connection, Integer id) throws DataException;
 
-	Results<RentalDTO> findByCriteria(Connection connection, RentalCriteria criteria) throws DataException;
+        Results<RentalDTO> findByCriteria(Connection connection, RentalCriteria criteria) throws DataException;
 
-	boolean existsByReservation(Integer reservationId) throws DataException;
+        boolean existsByReservation(Connection connection, Integer reservationId) throws DataException;
 }

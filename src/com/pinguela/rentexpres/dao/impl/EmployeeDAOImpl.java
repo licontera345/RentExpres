@@ -4,9 +4,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,403 +18,450 @@ import org.jasypt.util.password.StrongPasswordEncryptor;
 
 import com.pinguela.rentexpres.dao.EmployeeDAO;
 import com.pinguela.rentexpres.exception.DataException;
-import com.pinguela.rentexpres.model.EmployeeDTO;
 import com.pinguela.rentexpres.model.EmployeeCriteria;
+import com.pinguela.rentexpres.model.EmployeeDTO;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.util.JDBCUtils;
 
-/**
- * DAO implementation for the 'employee' table. Mirrors the design of
- * UsuarioDAOImpl, adapted to the employee schema.
- */
 public class EmployeeDAOImpl implements EmployeeDAO {
 
-	private static final Logger logger = LogManager.getLogger(EmployeeDAOImpl.class);
+        private static final Logger logger = LogManager.getLogger(EmployeeDAOImpl.class);
 
-        private static final String EMPLOYEE_SELECT_BASE = String.join(" ",
-                        "SELECT e.employee_id, e.employee_name, e.password,",
-                        "e.role_id, e.headquarters_id, e.first_name, e.last_name1, e.last_name2,",
-                        "e.phone, e.email",
+        private static final StrongPasswordEncryptor ENCRYPTOR = new StrongPasswordEncryptor();
+
+        private static final String BASE_SELECT = String.join(" ",
+                        "SELECT e.employee_id, e.employee_name, e.password, e.role_id, e.headquarters_id,",
+                        "       e.first_name, e.last_name1, e.last_name2, e.email, e.phone,",
+                        "       e.active_status, e.created_at, e.updated_at",
                         "FROM employee e");
 
-	@Override
-	public EmployeeDTO findById(Connection connection, Integer id) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
+        private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 
-		if (id == null) {
-			logger.warn("[{}] called with null id.", method);
-			return null;
-		}
+        private static Map<String, String> buildOrderColumns() {
+                Map<String, String> map = new HashMap<String, String>();
+                map.put("employee_id", "e.employee_id");
+                map.put("employee_name", "e.employee_name");
+                map.put("first_name", "e.first_name");
+                map.put("last_name1", "e.last_name1");
+                map.put("email", "e.email");
+                map.put("phone", "e.phone");
+                map.put("created_at", "e.created_at");
+                map.put("updated_at", "e.updated_at");
+                return map;
+        }
 
-                String sql = EMPLOYEE_SELECT_BASE + " WHERE e.employee_id = ? AND e.active_status = 1";
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+        @Override
+        public EmployeeDTO findById(Connection connection, Integer id) throws DataException {
+                final String method = "findById";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return null;
+                }
 
-		try {
-			ps = connection.prepareStatement(sql);
-			ps.setInt(1, id);
-			rs = ps.executeQuery();
-			if (rs.next()) {
-				logger.info("[{}] Employee found with id: {}", method, id);
-				return loadEmployee(rs, false);
-			}
-		} catch (SQLException e) {
-			logger.error("[{}] Error finding Employee by ID: {}", method, id, e);
-			throw new DataException("Error finding Employee by ID: " + id, e);
-		} finally {
-			JDBCUtils.close(ps, rs);
-		}
-		return null;
-	}
+                String sql = BASE_SELECT + " WHERE e.employee_id = ? AND e.active_status = 1";
 
-	@Override
-	public boolean create(Connection connection, EmployeeDTO employee) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        try (ResultSet rs = ps.executeQuery()) {
+                                if (rs.next()) {
+                                        logger.info("[{}] Employee found with id {}", method, id);
+                                        return toEmployeeDTO(rs);
+                                }
+                        }
+                        logger.warn("[{}] No employee found with id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error finding employee id {}", method, id, e);
+                        throw new DataException("Error finding employee by id", e);
+                }
+                return null;
+        }
 
-		if (employee == null) {
-			logger.warn("[{}] called with null employee.", method);
-			return false;
-		}
+        @Override
+        public boolean create(Connection connection, EmployeeDTO employee) throws DataException {
+                final String method = "create";
+                if (employee == null) {
+                        logger.warn("[{}] called with null employee", method);
+                        return false;
+                }
+                if (employee.getPassword() == null || employee.getPassword().trim().isEmpty()) {
+                        logger.warn("[{}] Missing password for employee {}", method, employee.getEmployeeName());
+                        return false;
+                }
 
-                String sql = "INSERT INTO employee (employee_name, password, role_id, headquarters_id, first_name, "
-                                + "last_name1, last_name2, phone, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO employee (employee_name, password, role_id, headquarters_id, first_name, last_name1,"
+                                + " last_name2, email, phone, active_status, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())";
 
-		PreparedStatement ps = null;
+                String hashed = ENCRYPTOR.encryptPassword(employee.getPassword());
 
-		try {
-			ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			setEmployeeParameters(ps, employee, false);
+                try (PreparedStatement ps = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                        int idx = 1;
+                        ps.setString(idx++, employee.getEmployeeName());
+                        ps.setString(idx++, hashed);
+                        setInteger(ps, idx++, employee.getRoleId());
+                        setInteger(ps, idx++, employee.getHeadquartersId());
+                        ps.setString(idx++, employee.getFirstName());
+                        ps.setString(idx++, employee.getLastName1());
+                        ps.setString(idx++, employee.getLastName2());
+                        ps.setString(idx++, employee.getEmail());
+                        ps.setString(idx++, employee.getPhone());
 
-			if (ps.executeUpdate() > 0) {
-				try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-					if (generatedKeys.next()) {
-						employee.setId(generatedKeys.getInt(1));
-					}
-				}
-				logger.info("[{}] Employee created successfully: {}", method, employee.getEmployeeName());
-				return true;
-			}
+                        if (ps.executeUpdate() > 0) {
+                                try (ResultSet keys = ps.getGeneratedKeys()) {
+                                        if (keys.next()) {
+                                                employee.setEmployeeId(Integer.valueOf(keys.getInt(1)));
+                                        }
+                                }
+                                logger.info("[{}] Created employee {} with id {}", method, employee.getEmployeeName(),
+                                                employee.getEmployeeId());
+                                return true;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error creating employee {}", method, employee.getEmployeeName(), e);
+                        throw new DataException("Error creating employee", e);
+                }
+                return false;
+        }
 
-		} catch (SQLException e) {
-			logger.error("[{}] Error creating Employee: {}", method, employee.getEmployeeName(), e);
-			throw new DataException("Error creating Employee: " + employee.getEmployeeName(), e);
-		} finally {
-			JDBCUtils.close(ps, null);
-		}
+        @Override
+        public boolean update(Connection connection, EmployeeDTO employee) throws DataException {
+                final String method = "update";
+                if (employee == null || employee.getEmployeeId() == null) {
+                        logger.warn("[{}] called with null employee or id", method);
+                        return false;
+                }
 
-		return false;
-	}
+                StringBuilder sql = new StringBuilder();
+                sql.append("UPDATE employee SET employee_name = ?, role_id = ?, headquarters_id = ?, first_name = ?, ");
+                sql.append("last_name1 = ?, last_name2 = ?, email = ?, phone = ?, updated_at = NOW()");
 
-	@Override
-	public boolean update(Connection connection, EmployeeDTO employee) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
+                List<Object> params = new ArrayList<Object>();
+                params.add(employee.getEmployeeName());
+                params.add(employee.getRoleId());
+                params.add(employee.getHeadquartersId());
+                params.add(employee.getFirstName());
+                params.add(employee.getLastName1());
+                params.add(employee.getLastName2());
+                params.add(employee.getEmail());
+                params.add(employee.getPhone());
 
-		if (employee == null || employee.getId() == null) {
-			logger.warn("[{}] called with null employee or id.", method);
-			return false;
-		}
+                if (employee.getPassword() != null && !employee.getPassword().trim().isEmpty()) {
+                                sql.append(", password = ?");
+                                params.add(ENCRYPTOR.encryptPassword(employee.getPassword()));
+                }
 
-                StringBuilder sql = new StringBuilder("UPDATE employee SET employee_name = ?, password = ?, "
-                                + "role_id = ?, headquarters_id = ?, first_name = ?, last_name1 = ?, last_name2 = ?, "
-                                + "phone = ?, email = ? WHERE employee_id = ?");
+                if (employee.getActiveStatus() != null) {
+                        sql.append(", active_status = ?");
+                        params.add(Boolean.valueOf(employee.getActiveStatus().booleanValue()));
+                }
 
-		PreparedStatement ps = null;
-		try {
-			ps = connection.prepareStatement(sql.toString());
-			setEmployeeParameters(ps, employee, true);
+                sql.append(" WHERE employee_id = ?");
+                params.add(employee.getEmployeeId());
 
-			if (ps.executeUpdate() > 0) {
-				logger.info("[{}] Employee updated successfully, id: {}", method, employee.getId());
-				return true;
-			}
+                try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+                        int idx = bind(ps, params);
+                        int updated = ps.executeUpdate();
+                        if (updated > 0) {
+                                logger.info("[{}] Updated employee id {}", method, employee.getEmployeeId());
+                                return true;
+                        }
+                        logger.warn("[{}] No rows updated for employee id {}", method, employee.getEmployeeId());
+                } catch (SQLException e) {
+                        logger.error("[{}] Error updating employee id {}", method, employee.getEmployeeId(), e);
+                        throw new DataException("Error updating employee", e);
+                }
+                return false;
+        }
 
-		} catch (SQLException e) {
-			logger.error("[{}] Error updating Employee: {}", method, employee.getId(), e);
-			throw new DataException("Error updating Employee: " + employee.getId(), e);
-		} finally {
-			JDBCUtils.close(ps, null);
-		}
-		return false;
-	}
+        @Override
+        public boolean delete(Connection connection, Integer id) throws DataException {
+                final String method = "delete";
+                if (id == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return false;
+                }
+                String sql = "UPDATE employee SET active_status = 0, updated_at = NOW() WHERE employee_id = ?";
 
-	@Override
-	public boolean delete(Connection connection, Integer userId) throws DataException {
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, id.intValue());
+                        int rows = ps.executeUpdate();
+                        if (rows > 0) {
+                                logger.info("[{}] Employee {} marked as inactive", method, id);
+                                return true;
+                        }
+                        logger.warn("[{}] No employee deactivated for id {}", method, id);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error deactivating employee {}", method, id, e);
+                        throw new DataException("Error deactivating employee", e);
+                }
+                return false;
+        }
 
-		PreparedStatement ps = null;
-		boolean deleted = false;
+        @Override
+        public List<EmployeeDTO> findAll(Connection connection) throws DataException {
+                final String method = "findAll";
+                List<EmployeeDTO> employees = new ArrayList<EmployeeDTO>();
+                String sql = BASE_SELECT + " WHERE e.active_status = 1 ORDER BY e.employee_id";
 
-		String sql = "UPDATE user " + "SET active_status = 0, updated_at = NOW() " + "WHERE user_id = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql);
+                                ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                                employees.add(toEmployeeDTO(rs));
+                        }
+                        logger.info("[{}] Retrieved {} active employees", method, Integer.valueOf(employees.size()));
+                } catch (SQLException e) {
+                        logger.error("[{}] Error retrieving all employees", method, e);
+                        throw new DataException("Error retrieving all employees", e);
+                }
+                return employees;
+        }
 
-		try {
-			ps = connection.prepareStatement(sql);
-			ps.setInt(1, userId);
+        @Override
+        public EmployeeDTO authenticate(Connection connection, String login, String clearPassword) throws DataException {
+                final String method = "authenticate";
+                if (login == null || clearPassword == null) {
+                        logger.warn("[{}] called with null credentials", method);
+                        return null;
+                }
 
-			int rows = ps.executeUpdate();
-			deleted = (rows > 0);
+                String trimmedLogin = login.trim();
+                boolean isEmail = trimmedLogin.contains("@");
 
-			if (deleted) {
-				logger.info("[delete] User successfully marked as inactive. user_id={}", userId);
-			} else {
-				logger.warn("[delete] The user to be deactivated was not found. user_id={}", userId);
-			}
-
-		} catch (SQLException e) {
-			logger.error("[delete] Error deactivating user withid={}: {}", userId, e.getMessage(), e);
-			throw new DataException("[UserDAOImpl] Error deactivating user", e);
-		} finally {
-			JDBCUtils.close(ps, null);
-		}
-
-		return deleted;
-	}
-
-	@Override
-	public EmployeeDTO authenticate(Connection connection, String login, String clearPassword) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
-
-		if (login == null || clearPassword == null) {
-			logger.warn("[{}] called with null parameters.", method);
-			return null;
-		}
-
-		login = login.trim();
-		clearPassword = clearPassword.trim();
-
-		boolean isEmail = login.contains("@");
-
-                String sql = EMPLOYEE_SELECT_BASE + " WHERE e.active_status = 1 AND "
+                String sql = BASE_SELECT + " WHERE e.active_status = 1 AND "
                                 + (isEmail ? "LOWER(e.email) = LOWER(?)" : "e.employee_name = ?");
 
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			ps = connection.prepareStatement(sql);
-			ps.setString(1, login);
-			rs = ps.executeQuery();
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setString(1, trimmedLogin);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                if (rs.next()) {
+                                        String hashed = rs.getString("password");
+                                        if (hashed != null && ENCRYPTOR.checkPassword(clearPassword, hashed)) {
+                                                logger.info("[{}] Employee authenticated: {}", method, trimmedLogin);
+                                                return toEmployeeDTO(rs);
+                                        }
+                                        logger.warn("[{}] Invalid password for {}", method, trimmedLogin);
+                                } else {
+                                        logger.warn("[{}] No employee found for login {}", method, trimmedLogin);
+                                }
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error authenticating {}", method, trimmedLogin, e);
+                        throw new DataException("Error authenticating employee", e);
+                }
+                return null;
+        }
 
-			if (rs.next()) {
-				String storedHash = rs.getString("password");
-				StrongPasswordEncryptor encryptor = new StrongPasswordEncryptor();
+        @Override
+        public Results<EmployeeDTO> findByCriteria(Connection connection, EmployeeCriteria criteria) throws DataException {
+                final String method = "findByCriteria";
+                if (criteria == null) {
+                        criteria = new EmployeeCriteria();
+                }
+                criteria.normalize();
 
-				if (encryptor.checkPassword(clearPassword, storedHash)) {
-					logger.info("[{}] Employee authenticated successfully: {}", method, login);
-					return loadEmployee(rs, true);
-				} else {
-					logger.debug("[{}] Incorrect password for {}", method, login);
-				}
-			} else {
-				logger.debug("[{}] Employee not found: {}", method, login);
-			}
+                Results<EmployeeDTO> results = new Results<EmployeeDTO>();
+                List<Object> filters = new ArrayList<Object>();
 
-		} catch (SQLException e) {
-			logger.error("[{}] SQL error authenticating {}", method, login, e);
-			throw new DataException("Error authenticating: " + login, e);
-		} finally {
-			JDBCUtils.close(ps, rs);
-		}
+                StringBuilder from = new StringBuilder(BASE_SELECT.substring(BASE_SELECT.indexOf("FROM")));
+                StringBuilder where = new StringBuilder(" WHERE 1=1");
 
-		return null;
-	}
+                if (criteria.getEmployeeId() != null) {
+                        where.append(" AND e.employee_id = ?");
+                        filters.add(criteria.getEmployeeId());
+                }
+                if (criteria.getEmployeeName() != null) {
+                        where.append(" AND e.employee_name LIKE ?");
+                        filters.add(like(criteria.getEmployeeName()));
+                }
+                if (criteria.getRoleId() != null) {
+                        where.append(" AND e.role_id = ?");
+                        filters.add(criteria.getRoleId());
+                }
+                if (criteria.getHeadquartersId() != null) {
+                        where.append(" AND e.headquarters_id = ?");
+                        filters.add(criteria.getHeadquartersId());
+                }
+                if (criteria.getFirstName() != null) {
+                        where.append(" AND e.first_name LIKE ?");
+                        filters.add(like(criteria.getFirstName()));
+                }
+                if (criteria.getLastName1() != null) {
+                        where.append(" AND e.last_name1 LIKE ?");
+                        filters.add(like(criteria.getLastName1()));
+                }
+                if (criteria.getLastName2() != null) {
+                        where.append(" AND e.last_name2 LIKE ?");
+                        filters.add(like(criteria.getLastName2()));
+                }
+                if (criteria.getEmail() != null) {
+                        where.append(" AND e.email LIKE ?");
+                        filters.add(like(criteria.getEmail()));
+                }
+                if (criteria.getPhone() != null) {
+                        where.append(" AND e.phone LIKE ?");
+                        filters.add(like(criteria.getPhone()));
+                }
+                if (criteria.getCreatedAtFrom() != null) {
+                        where.append(" AND e.created_at >= ?");
+                        filters.add(criteria.getCreatedAtFrom());
+                }
+                if (criteria.getCreatedAtTo() != null) {
+                        where.append(" AND e.created_at <= ?");
+                        filters.add(criteria.getCreatedAtTo());
+                }
+                if (criteria.getUpdatedAtFrom() != null) {
+                        where.append(" AND e.updated_at >= ?");
+                        filters.add(criteria.getUpdatedAtFrom());
+                }
+                if (criteria.getUpdatedAtTo() != null) {
+                        where.append(" AND e.updated_at <= ?");
+                        filters.add(criteria.getUpdatedAtTo());
+                }
 
-	@Override
-	public List<EmployeeDTO> findAll(Connection connection) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
+                if (criteria.getActiveStatus() == null) {
+                        where.append(" AND e.active_status = 1");
+                } else {
+                        where.append(" AND e.active_status = ?");
+                        filters.add(Boolean.valueOf(criteria.getActiveStatus().booleanValue()));
+                }
 
-		List<EmployeeDTO> employees = new ArrayList<>();
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+                String countSql = "SELECT COUNT(1) " + from.toString() + where.toString();
 
-		try {
-                        ps = connection.prepareStatement(EMPLOYEE_SELECT_BASE + " WHERE e.active_status = 1");
-			rs = ps.executeQuery();
+                int page = criteria.getSafePage();
+                int pageSize = criteria.getSafePageSize();
+                int total;
 
-			while (rs.next()) {
-				employees.add(loadEmployee(rs, false));
-			}
+                try (PreparedStatement ps = connection.prepareStatement(countSql)) {
+                        bind(ps, filters);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                total = rs.next() ? rs.getInt(1) : 0;
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing count", method, e);
+                        throw new DataException("Error executing employee count", e);
+                }
 
-		} catch (SQLException e) {
-			logger.error("[{}] Error fetching all Employees", method, e);
-			throw new DataException("Error fetching all Employees", e);
-		} finally {
-			JDBCUtils.close(ps, rs);
-		}
+                if (total == 0) {
+                        results.setItems(Collections.<EmployeeDTO>emptyList());
+                        results.setPage(page);
+                        results.setPageSize(pageSize);
+                        results.setTotal(total);
+                        results.normalize();
+                        return results;
+                }
 
-		return employees;
-	}
+                int totalPages = (total + pageSize - 1) / pageSize;
+                if (page > totalPages) {
+                        page = totalPages;
+                }
+                int offset = (page - 1) * pageSize;
 
-	@Override
-	public Results<EmployeeDTO> findByCriteria(Connection connection, EmployeeCriteria criteria) throws DataException {
-		final String method = new Object() {
-		}.getClass().getEnclosingMethod().getName();
+                String orderColumn = resolveOrderColumn(criteria.getOrderBy());
+                String direction = criteria.getSafeOrderDir();
 
-		Results<EmployeeDTO> results = new Results<>();
+                String selectSql = BASE_SELECT + where.toString() + " ORDER BY " + orderColumn + " " + direction
+                                + " LIMIT ? OFFSET ?";
 
-                StringBuilder sql = new StringBuilder(EMPLOYEE_SELECT_BASE);
-                sql.append(" WHERE 1=1");
-                sql.append(" AND e.active_status = 1");
+                List<EmployeeDTO> items = new ArrayList<EmployeeDTO>();
+                try (PreparedStatement ps = connection.prepareStatement(selectSql)) {
+                        int idx = bind(ps, filters);
+                        ps.setInt(idx++, pageSize);
+                        ps.setInt(idx, offset);
+                        try (ResultSet rs = ps.executeQuery()) {
+                                while (rs.next()) {
+                                        items.add(toEmployeeDTO(rs));
+                                }
+                        }
+                } catch (SQLException e) {
+                        logger.error("[{}] Error executing paginated query", method, e);
+                        throw new DataException("Error searching employees", e);
+                }
 
-		if (criteria.getEmployeeName() != null && !criteria.getEmployeeName().isEmpty()) {
-                        sql.append(" AND e.employee_name LIKE ? ");
-		}
-		if (criteria.getFirstName() != null && !criteria.getFirstName().isEmpty()) {
-                        sql.append(" AND e.first_name LIKE ? ");
-		}
-		if (criteria.getLastName1() != null && !criteria.getLastName1().isEmpty()) {
-                        sql.append(" AND e.last_name1 LIKE ? ");
-		}
-		if (criteria.getLastName2() != null && !criteria.getLastName2().isEmpty()) {
-                        sql.append(" AND e.last_name2 LIKE ? ");
-		}
-		if (criteria.getEmail() != null && !criteria.getEmail().isEmpty()) {
-                        sql.append(" AND e.email LIKE ? ");
-		}
-		if (criteria.getPhone() != null && !criteria.getPhone().isEmpty()) {
-                        sql.append(" AND e.phone LIKE ? ");
-		}
+                results.setItems(items);
+                results.setPage(page);
+                results.setPageSize(pageSize);
+                results.setTotal(total);
+                results.normalize();
+                return results;
+        }
 
-		String countSql = "SELECT COUNT(*) FROM (" + sql.toString() + ") AS total";
+        @Override
+        public boolean activate(Connection connection, Integer employeeId) throws DataException {
+                final String method = "activate";
+                if (employeeId == null) {
+                        logger.warn("[{}] called with null id", method);
+                        return false;
+                }
+                String sql = "UPDATE employee SET active_status = 1, updated_at = NOW() WHERE employee_id = ?";
 
-		int page = criteria.getPageNumber() <= 0 ? 1 : criteria.getPageNumber();
-		int size = criteria.getPageSize() <= 0 ? 25 : criteria.getPageSize();
-		int offset = (page - 1) * size;
+                try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        ps.setInt(1, employeeId.intValue());
+                        int rows = ps.executeUpdate();
+                        if (rows > 0) {
+                                logger.info("[{}] Employee {} reactivated", method, employeeId);
+                                return true;
+                        }
+                        logger.warn("[{}] No employee reactivated for id {}", method, employeeId);
+                } catch (SQLException e) {
+                        logger.error("[{}] Error activating employee {}", method, employeeId, e);
+                        throw new DataException("Error activating employee", e);
+                }
+                return false;
+        }
 
-                sql.append(" ORDER BY e.employee_id LIMIT ? OFFSET ? ");
+        private static String like(String value) {
+                return value == null ? null : "%" + value + "%";
+        }
 
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+        private static void setInteger(PreparedStatement ps, int index, Integer value) throws SQLException {
+                if (value == null) {
+                        ps.setNull(index, java.sql.Types.INTEGER);
+                } else {
+                        ps.setInt(index, value.intValue());
+                }
+        }
 
-		try {
-			// total count
-			ps = connection.prepareStatement(countSql);
-			int idx = bindCriteriaParameters(ps, criteria, 1);
-			rs = ps.executeQuery();
-			int totalRecords = 0;
-			if (rs.next())
-				totalRecords = rs.getInt(1);
-			JDBCUtils.close(ps, rs);
+        private int bind(PreparedStatement ps, List<Object> values) throws SQLException {
+                int idx = 1;
+                for (Object value : values) {
+                        if (value instanceof String) {
+                                ps.setString(idx++, (String) value);
+                        } else if (value instanceof Integer) {
+                                ps.setInt(idx++, ((Integer) value).intValue());
+                        } else if (value instanceof Boolean) {
+                                ps.setInt(idx++, ((Boolean) value).booleanValue() ? 1 : 0);
+                        } else if (value instanceof LocalDateTime) {
+                                LocalDateTime dt = (LocalDateTime) value;
+                                ps.setTimestamp(idx++, dt == null ? null : Timestamp.valueOf(dt));
+                        } else {
+                                ps.setObject(idx++, value);
+                        }
+                }
+                return idx;
+        }
 
-			// paginated query
-			ps = connection.prepareStatement(sql.toString());
-			idx = bindCriteriaParameters(ps, criteria, 1);
-			ps.setInt(idx++, size);
-			ps.setInt(idx++, offset);
+        private String resolveOrderColumn(String requested) {
+                String key = requested == null ? null : requested;
+                String column = ORDER_BY_COLUMNS.get(key);
+                return column != null ? column : "e.employee_id";
+        }
 
-			rs = ps.executeQuery();
-			List<EmployeeDTO> employees = new ArrayList<>();
-			while (rs.next()) {
-				employees.add(loadEmployee(rs, false));
-			}
-
-			results.setResults(employees);
-			results.setPageNumber(page);
-			results.setPageSize(size);
-			results.setTotalRecords(totalRecords);
-
-			logger.info("[{}] findByCriteria Employee paginated: page {} of {} ({} total)", method, page,
-					(int) Math.ceil((double) totalRecords / size), totalRecords);
-
-		} catch (SQLException e) {
-			logger.error("[{}] Error in findByCriteria Employee", method, e);
-			throw new DataException("Error in findByCriteria Employee", e);
-		} finally {
-			JDBCUtils.close(ps, rs);
-		}
-
-		return results;
-	}
-
-	@Override
-	public boolean activate(Connection connection, Integer employeeId) throws DataException {
-
-	    PreparedStatement ps = null;
-	    boolean activated = false;
-
-	    String sql = "UPDATE employee "
-	               + "SET active_status = 1, updated_at = NOW() "
-	               + "WHERE employee_id = ?";
-
-	    try {
-	        ps = connection.prepareStatement(sql);
-	        ps.setInt(1, employeeId);
-
-	        int rows = ps.executeUpdate();
-	        activated = (rows > 0);
-
-	        if (activated) {
-	            logger.info("[activate] Empleado reactivado correctamente. employee_id={}", employeeId);
-	        } else {
-	            logger.warn("[activate] No se encontró el empleado para reactivar. employee_id={}", employeeId);
-	        }
-
-	    } catch (SQLException e) {
-	        logger.error("[activate] Error al reactivar empleado con id={}: {}", employeeId, e.getMessage(), e);
-	        throw new DataException("[EmployeeDAOImpl] Error al reactivar empleado", e);
-	    } finally {
-	        JDBCUtils.close(ps,  null);
-	    }
-
-	    return activated;
-	}
-
-	private EmployeeDTO loadEmployee(ResultSet rs, boolean authenticated) throws SQLException {
-		EmployeeDTO e = new EmployeeDTO();
-		e.setId(rs.getInt("employee_id"));
-		e.setEmployeeName(rs.getString("employee_name"));
-		e.setRoleId(rs.getInt("role_id"));
-		e.setHeadquartersId(rs.getInt("headquarters_id"));
-		e.setFirstName(rs.getString("first_name"));
-		e.setLastName1(rs.getString("last_name1"));
-		e.setLastName2(rs.getString("last_name2"));
-		e.setPhone(rs.getString("phone"));
-		e.setEmail(rs.getString("email"));
-		e.setPassword(null);
-		return e;
-	}
-
-	private void setEmployeeParameters(PreparedStatement ps, EmployeeDTO e, boolean isUpdate) throws SQLException {
-		ps.setString(1, e.getEmployeeName());
-
-		StrongPasswordEncryptor encryptor = new StrongPasswordEncryptor();
-		String encrypted = encryptor.encryptPassword(e.getPassword());
-		ps.setString(2, encrypted);
-
-		ps.setInt(3, e.getRoleId());
-		ps.setInt(4, e.getHeadquartersId());
-		ps.setString(5, e.getFirstName());
-		ps.setString(6, e.getLastName1());
-		ps.setString(7, e.getLastName2());
-		ps.setString(8, e.getPhone());
-		ps.setString(9, e.getEmail());
-
-		if (isUpdate) {
-			ps.setInt(10, e.getId());
-		}
-	}
-
-	private int bindCriteriaParameters(PreparedStatement ps, EmployeeCriteria c, int idx) throws SQLException {
-		if (c.getEmployeeName() != null && !c.getEmployeeName().isEmpty()) {
-			ps.setString(idx++, "%" + c.getEmployeeName() + "%");
-		}
-		if (c.getFirstName() != null && !c.getFirstName().isEmpty()) {
-			ps.setString(idx++, "%" + c.getFirstName() + "%");
-		}
-		if (c.getLastName1() != null && !c.getLastName1().isEmpty()) {
-			ps.setString(idx++, "%" + c.getLastName1() + "%");
-		}
-		if (c.getLastName2() != null && !c.getLastName2().isEmpty()) {
-			ps.setString(idx++, "%" + c.getLastName2() + "%");
-		}
-		if (c.getEmail() != null && !c.getEmail().isEmpty()) {
-			ps.setString(idx++, "%" + c.getEmail() + "%");
-		}
-		if (c.getPhone() != null && !c.getPhone().isEmpty()) {
-			ps.setString(idx++, "%" + c.getPhone() + "%");
-		}
-		return idx;
-	}
+        private EmployeeDTO toEmployeeDTO(ResultSet rs) throws SQLException {
+                EmployeeDTO dto = new EmployeeDTO();
+                dto.setEmployeeId(Integer.valueOf(rs.getInt("employee_id")));
+                dto.setEmployeeName(rs.getString("employee_name"));
+                dto.setRoleId(Integer.valueOf(rs.getInt("role_id")));
+                dto.setHeadquartersId(Integer.valueOf(rs.getInt("headquarters_id")));
+                dto.setFirstName(rs.getString("first_name"));
+                dto.setLastName1(rs.getString("last_name1"));
+                dto.setLastName2(rs.getString("last_name2"));
+                dto.setEmail(rs.getString("email"));
+                dto.setPhone(rs.getString("phone"));
+                dto.setActiveStatus(Boolean.valueOf(rs.getInt("active_status") == 1));
+                Timestamp created = rs.getTimestamp("created_at");
+                dto.setCreatedAt(created == null ? null : created.toLocalDateTime());
+                Timestamp updated = rs.getTimestamp("updated_at");
+                dto.setUpdatedAt(updated == null ? null : updated.toLocalDateTime());
+                dto.setPassword(null);
+                return dto;
+        }
 }
