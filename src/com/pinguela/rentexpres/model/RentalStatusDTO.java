@@ -7,11 +7,13 @@ public class RentalStatusDTO extends ValueObject {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Integer rentalStatusId; // rental_status.rental_status_id
-	private String statusName; // rental_status.status_name
+        private static final long serialVersionUID = 1L;
+        private Integer rentalStatusId; // rental_status.rental_status_id
 
-	private List<LanguageDTO> language;
+        /** Maximum length: 50 characters. */
+        private String statusName; // rental_status.status_name
+
+        private List<RentalStatusLanguageDTO> translations;
 
 	public RentalStatusDTO() {
 		super();
@@ -33,12 +35,12 @@ public class RentalStatusDTO extends ValueObject {
 		this.statusName = statusName;
 	}
 
-	public List<LanguageDTO> getLanguage() {
-		return language;
-	}
+        public List<RentalStatusLanguageDTO> getTranslations() {
+            return translations;
+        }
 
-	public void setLanguage(List<LanguageDTO> language) {
-		this.language = language;
-	}
+        public void setTranslations(List<RentalStatusLanguageDTO> translations) {
+            this.translations = translations;
+        }
 
 }
