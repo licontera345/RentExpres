@@ -107,17 +107,18 @@ public class FileServiceImpl implements FileService {
 					continue;
 				}
 				// Si ya está dentro del folder del vehículo, no hacemos nada
-				try {
-					Path targetDir = folder.toPath().toRealPath();
-					Path srcPath = img.toPath().toRealPath();
+                                try {
+                                        Path targetDir = folder.toPath().toRealPath();
+                                        Path srcPath = img.toPath().toRealPath();
 
-					if (!srcPath.startsWith(targetDir)) {
-						// nuevo nombre secuencial: 1.jpg, 2.jpg, ...
-						String next = getNextNameSequential(folder);
-						File target = new File(folder, next + ".jpg");
-						Files.copy(img.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-					}
-				} catch (IOException e) {
+                                        if (!srcPath.startsWith(targetDir)) {
+                                                // nuevo nombre secuencial: 1.ext, 2.ext, ...
+                                                String next = getNextNameSequential(folder);
+                                                String extension = getExtension(img.getName());
+                                                File target = new File(folder, next + extension);
+                                                Files.copy(img.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                        }
+                                } catch (IOException e) {
 					logger.error("Error copiando imagen de vehículo {}", img, e);
 					throw new RentexpresException("Error subiendo imágenes de vehículo", e);
 				}
@@ -227,13 +228,13 @@ public class FileServiceImpl implements FileService {
 	 * Obtiene el siguiente número libre escaneando nombres "N.extension" en el
 	 * directorio. Acepta .jpg/.jpeg/.png/.gif; devolvemos el siguiente entero.
 	 */
-	private String getNextNameSequential(File dir) {
-		File[] files = dir.listFiles((d, name) -> IMG_EXT.matcher(name).matches());
-		int max = 0;
-		if (files != null) {
-			for (File f : files) {
-				String name = f.getName(); // p.ej. "12.jpg"
-				int dot = name.lastIndexOf('.');
+        private String getNextNameSequential(File dir) {
+                File[] files = dir.listFiles((d, name) -> IMG_EXT.matcher(name).matches());
+                int max = 0;
+                if (files != null) {
+                        for (File f : files) {
+                                String name = f.getName(); // p.ej. "12.jpg"
+                                int dot = name.lastIndexOf('.');
 				String base = (dot > 0) ? name.substring(0, dot) : name;
 				try {
 					int n = Integer.parseInt(base);
@@ -243,9 +244,16 @@ public class FileServiceImpl implements FileService {
 					// ignora nombres no numéricos
 				}
 			}
-		}
-		return String.valueOf(max + 1);
-	}
+                }
+                return String.valueOf(max + 1);
+        }
+
+        private String getExtension(String filename) {
+                int dot = filename.lastIndexOf('.');
+                if (dot < 0)
+                        return "";
+                return filename.substring(dot);
+        }
 
 	private void saveAvatarOrDefault(File imagen, File target, String defaultFsKey, String classpathFallback)
 			throws RentexpresException {
