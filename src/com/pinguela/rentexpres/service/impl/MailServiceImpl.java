@@ -13,20 +13,34 @@ import com.pinguela.rentexpres.service.MailService;
 public class MailServiceImpl implements MailService {
 
     private static final Logger logger = LogManager.getLogger(MailServiceImpl.class);
-    private static final String MAIL_EMAIL = ConfigManager.getStringValue("mail.email");
-    private static final String MAIL_PASSWORD = ConfigManager.getStringValue("mail.password");
-    private static final String MAIL_SMTP_SERVER_NAME = ConfigManager.getStringValue("mail.smtp.server.name");
-    private static final int MAIL_SMTP_SERVER_PORT = Integer.parseInt(ConfigManager.getStringValue("mail.smtp.server.port"));
 
     @Override
     public boolean send(String destinatario, String asunto, String cuerpo) {
+        String fromEmail = ConfigManager.getValue("mail.email");
+        String password = ConfigManager.getValue("mail.password");
+        String host = ConfigManager.getValue("mail.smtp.server.name");
+        String portValue = ConfigManager.getValue("mail.smtp.server.port");
+
+        if (isBlank(destinatario) || isBlank(fromEmail) || isBlank(password) || isBlank(host) || isBlank(portValue)) {
+            logger.error("No se pudo enviar el correo: configuración o destinatario inválidos");
+            return false;
+        }
+
+        final int port;
+        try {
+            port = Integer.parseInt(portValue.trim());
+        } catch (NumberFormatException e) {
+            logger.error("Puerto SMTP inválido: {}", portValue, e);
+            return false;
+        }
+
         try {
             Email email = new SimpleEmail();
-            email.setHostName(MAIL_SMTP_SERVER_NAME);
-            email.setSmtpPort(MAIL_SMTP_SERVER_PORT);
-            email.setAuthenticator(new DefaultAuthenticator(MAIL_EMAIL, MAIL_PASSWORD));
+            email.setHostName(host);
+            email.setSmtpPort(port);
+            email.setAuthenticator(new DefaultAuthenticator(fromEmail, password));
             email.setStartTLSEnabled(true);
-            email.setFrom(MAIL_EMAIL);
+            email.setFrom(fromEmail);
             email.setSubject(asunto);
             email.setMsg(cuerpo);
             email.addTo(destinatario);
@@ -39,6 +53,10 @@ public class MailServiceImpl implements MailService {
             logger.error("Error al enviar el correo a " + destinatario + ": " + e.getMessage(), e);
             return false;
         }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
 
