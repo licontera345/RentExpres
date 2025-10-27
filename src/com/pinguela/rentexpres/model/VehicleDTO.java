@@ -97,13 +97,39 @@ public class VehicleDTO extends ValueObject {
 		this.vinNumber = vinNumber;
 	}
 
-	public Integer getCurrentMileage() {
-		return currentMileage;
-	}
+        public Integer getCurrentMileage() {
+                return currentMileage;
+        }
 
-	public void setCurrentMileage(Integer currentMileage) {
-		this.currentMileage = currentMileage;
-	}
+        public void setCurrentMileage(Integer currentMileage) {
+                this.currentMileage = currentMileage;
+        }
+
+        /**
+         * Provides backwards compatible access to the vehicle mileage field.
+         * <p>
+         * Historically JSP views referenced a {@code mileage} property which no longer
+         * exists after the DTO was renamed to {@code currentMileage}. Older deployed
+         * pages can still attempt to resolve {@code vehicle.mileage}, which results in
+         * {@link jakarta.el.PropertyNotFoundException}. Exposing an alias ensures both
+         * property names resolve to the same value and prevents the runtime failure.
+         * </p>
+         *
+         * @return the current mileage value.
+         */
+        public Integer getMileage() {
+                return getCurrentMileage();
+        }
+
+        /**
+         * Setter counterpart for {@link #getMileage()} to preserve bean property
+         * symmetry for frameworks performing reflective access.
+         *
+         * @param mileage the mileage value to assign.
+         */
+        public void setMileage(Integer mileage) {
+                setCurrentMileage(mileage);
+        }
 
 	public Integer getVehicleStatusId() {
 		return vehicleStatusId;
