@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jasypt.exceptions.EncryptionOperationNotPossibleException;
 import org.jasypt.util.password.StrongPasswordEncryptor;
 
 import com.pinguela.rentexpres.dao.UserDAO;
@@ -67,11 +68,21 @@ public class UserDAOImpl implements UserDAO {
                         try (ResultSet rs = ps.executeQuery()) {
                                 if (rs.next()) {
                                         String encryptedPassword = rs.getString("password");
-                                        if (encryptedPassword != null && ENCRYPTOR.checkPassword(password, encryptedPassword)) {
-                                                logger.info("[{}] Successful authentication for login: {}", method, login);
-                                                return toUserDTO(rs, true);
+                                        if (encryptedPassword != null) {
+                                                try {
+                                                        if (ENCRYPTOR.checkPassword(password, encryptedPassword)) {
+                                                                logger.info("[{}] Successful authentication for login: {}", method,
+                                                                                login);
+                                                                return toUserDTO(rs, true);
+                                                        }
+                                                        logger.warn("[{}] Invalid password for login: {}", method, login);
+                                                } catch (EncryptionOperationNotPossibleException e) {
+                                                        logger.error("[{}] Unable to verify password for login: {}", method,
+                                                                        login, e);
+                                                }
+                                        } else {
+                                                logger.warn("[{}] Stored password is null for login: {}", method, login);
                                         }
-                                        logger.warn("[{}] Invalid password for login: {}", method, login);
                                 } else {
                                         logger.warn("[{}] No user found for login: {}", method, login);
                                 }
