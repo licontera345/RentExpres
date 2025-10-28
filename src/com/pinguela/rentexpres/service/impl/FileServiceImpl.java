@@ -84,7 +84,7 @@ public class FileServiceImpl implements FileService {
 		File folder = ensureDir(new File(base, vehicleId.toString()));
 
 		// 1) Borrar lo que ya no está
-		Set<String> incomingAbs = new HashSet<>();
+                Set<String> incomingAbs = new HashSet<String>();
 		if (imagenes != null) {
 			for (File f : imagenes) {
 				if (f != null)
