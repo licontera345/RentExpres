@@ -158,7 +158,6 @@ public class EmployeeDAOImpl implements EmployeeDAO {
                 params.add(employee.getEmployeeId());
 
                 try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-                        int idx = bind(ps, params);
                         int updated = ps.executeUpdate();
                         if (updated > 0) {
                                 logger.info("[{}] Updated employee id {}", method, employee.getEmployeeId());

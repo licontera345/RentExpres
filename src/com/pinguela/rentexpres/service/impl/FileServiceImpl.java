@@ -188,7 +188,7 @@ public class FileServiceImpl implements FileService {
 
 	private String getRequired(String key) throws RentexpresException {
 		String v = ConfigManager.getValue(key);
-		if (v == null || v.isBlank()) {
+		if (v == null || v.isEmpty()) {
 			throw new RentexpresException("Config key missing: " + key);
 		}
 		return v;
@@ -266,7 +266,7 @@ public class FileServiceImpl implements FileService {
 
 			// Si la imagen es nula o inválida → intentar default del FS
 			String defPath = ConfigManager.getValue(defaultFsKey);
-			if (defPath != null && !defPath.isBlank()) {
+			if (defPath != null && !defPath.isEmpty()) {
 				File def = new File(defPath);
 				if (def.exists()) {
 					Files.copy(def.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -300,7 +300,7 @@ public class FileServiceImpl implements FileService {
 
 	private File defaultFromFs(String key) {
 		String p = ConfigManager.getValue(key);
-		if (p != null && !p.isBlank()) {
+		if (p != null && !p.isEmpty()) {
 			File f = new File(p);
 			if (f.exists())
 				return f;

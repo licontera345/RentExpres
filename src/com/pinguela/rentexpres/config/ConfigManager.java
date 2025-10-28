@@ -58,7 +58,7 @@ public class ConfigManager {
 		String configuredPath = getValue("base.image.path");
 		Path basePath;
 
-		if (configuredPath == null || configuredPath.isBlank()) {
+		if (configuredPath == null || configuredPath.isEmpty()) {
 			basePath = Paths.get(System.getProperty("user.dir"), "resources", "uploads");
 		} else {
 			Path configured = Paths.get(configuredPath);
