@@ -18,18 +18,16 @@ public class VehicleCategoryDAOImpl implements VehicleCategoryDAO {
 
     private static final Logger logger = LogManager.getLogger(VehicleCategoryDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT vc.category_id AS category_id,",
-            "       vc.category_name AS category_name",
-            "FROM vehicle_category vc");
+    private static final String BASE_SELECT = "SELECT vc.category_id AS category_id, "
+            + "       vc.category_name AS category_name "
+            + "FROM vehicle_category vc";
 
-    private static final String I18N_SELECT = String.join(" ",
-            "SELECT vc.category_id AS category_id,",
-            "       COALESCE(vcl.translated_name, vc.category_name) AS category_name",
-            "FROM vehicle_category vc",
-            "LEFT JOIN language l ON l.iso_code = ?",
-            "LEFT JOIN vehicle_category_language vcl",
-            "       ON vcl.category_id = vc.category_id AND vcl.language_id = l.language_id");
+    private static final String I18N_SELECT = "SELECT vc.category_id AS category_id, "
+            + "       COALESCE(vcl.translated_name, vc.category_name) AS category_name "
+            + "FROM vehicle_category vc "
+            + "LEFT JOIN language l ON l.iso_code = ? "
+            + "LEFT JOIN vehicle_category_language vcl "
+            + "       ON vcl.category_id = vc.category_id AND vcl.language_id = l.language_id";
 
     @Override
     public VehicleCategoryDTO findById(Connection connection, Integer id, String isoCode) throws DataException {

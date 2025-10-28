@@ -19,11 +19,10 @@ public class CityDAOImpl implements CityDAO {
 
     private static final Logger logger = LogManager.getLogger(CityDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT c.city_id AS city_id,",
-            "       c.city_name AS city_name,",
-            "       c.province_id AS province_id",
-            "FROM city c");
+    private static final String BASE_SELECT = "SELECT c.city_id AS city_id, "
+            + "       c.city_name AS city_name, "
+            + "       c.province_id AS province_id "
+            + "FROM city c";
 
     @Override
     public CityDTO findById(Connection connection, Integer id) throws DataException {

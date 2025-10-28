@@ -1,6 +1,7 @@
 package com.pinguela.rentexpres.service.impl;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -40,7 +41,13 @@ public class FileServiceImpl implements FileService {
 	private static final String AVATAR_NAME = "profile.jpg";
 
 	// Extensiones permitidas
-	private static final Pattern IMG_EXT = Pattern.compile("(?i).*\\.(jpg|jpeg|png|gif)$");
+        private static final Pattern IMG_EXT = Pattern.compile("(?i).*\\.(jpg|jpeg|png|gif)$");
+        private static final FilenameFilter IMAGE_FILTER = new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                        return IMG_EXT.matcher(name).matches();
+                }
+        };
 
 	// ==========================
 	// VEHICLE
@@ -54,14 +61,19 @@ public class FileServiceImpl implements FileService {
 		if (!dir.exists() || !dir.isDirectory())
 			return Collections.emptyList();
 
-		File[] files = dir.listFiles((d, name) -> IMG_EXT.matcher(name).matches());
-		if (files == null || files.length == 0)
-			return Collections.emptyList();
+                File[] files = dir.listFiles(IMAGE_FILTER);
+                if (files == null || files.length == 0)
+                        return Collections.emptyList();
 
-		// Orden natural por nombre (1.jpg, 2.jpg, …)
-		Arrays.sort(files, Comparator.comparing(File::getName));
-		return Arrays.asList(files);
-	}
+                // Orden natural por nombre (1.jpg, 2.jpg, …)
+                Arrays.sort(files, new Comparator<File>() {
+                        @Override
+                        public int compare(File a, File b) {
+                                return a.getName().compareTo(b.getName());
+                        }
+                });
+                return Arrays.asList(files);
+        }
 
 	@Override
 	public void uploadImagesByVehicleId(List<File> imagenes, Integer vehicleId) throws RentexpresException {
@@ -79,7 +91,7 @@ public class FileServiceImpl implements FileService {
 					incomingAbs.add(f.getAbsolutePath());
 			}
 		}
-		File[] current = folder.listFiles((d, name) -> IMG_EXT.matcher(name).matches());
+                File[] current = folder.listFiles(IMAGE_FILTER);
 		if (current != null) {
 			for (File existing : current) {
 				// Si el fichero existente no está en la lista entrante (por ruta absoluta), se
@@ -229,7 +241,7 @@ public class FileServiceImpl implements FileService {
 	 * directorio. Acepta .jpg/.jpeg/.png/.gif; devolvemos el siguiente entero.
 	 */
         private String getNextNameSequential(File dir) {
-                File[] files = dir.listFiles((d, name) -> IMG_EXT.matcher(name).matches());
+                File[] files = dir.listFiles(IMAGE_FILTER);
                 int max = 0;
                 if (files != null) {
                         for (File f : files) {

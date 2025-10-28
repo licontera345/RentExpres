@@ -28,11 +28,10 @@ public class EmployeeDAOImpl implements EmployeeDAO {
 
         private static final StrongPasswordEncryptor ENCRYPTOR = new StrongPasswordEncryptor();
 
-        private static final String BASE_SELECT = String.join(" ",
-                        "SELECT e.employee_id, e.employee_name, e.password, e.role_id, e.headquarters_id,",
-                        "       e.first_name, e.last_name1, e.last_name2, e.email, e.phone,",
-                        "       e.active_status, e.created_at, e.updated_at",
-                        "FROM employee e");
+        private static final String BASE_SELECT = "SELECT e.employee_id, e.employee_name, e.password, e.role_id, e.headquarters_id, "
+                        + "       e.first_name, e.last_name1, e.last_name2, e.email, e.phone, "
+                        + "       e.active_status, e.created_at, e.updated_at "
+                        + "FROM employee e";
 
         private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 

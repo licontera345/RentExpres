@@ -27,11 +27,10 @@ public class ReservationDAOImpl implements ReservationDAO {
 
         private static final Logger logger = LogManager.getLogger(ReservationDAOImpl.class);
 
-        private static final String BASE_SELECT = String.join(" ",
-                        "SELECT r.reservation_id, r.vehicle_id, r.user_id, r.employee_id,",
-                        "       r.reservation_status_id, r.pickup_headquarters_id, r.return_headquarters_id,",
-                        "       r.start_date, r.end_date, r.created_at, r.updated_at",
-                        "FROM reservation r");
+        private static final String BASE_SELECT = "SELECT r.reservation_id, r.vehicle_id, r.user_id, r.employee_id, "
+                        + "       r.reservation_status_id, r.pickup_headquarters_id, r.return_headquarters_id, "
+                        + "       r.start_date, r.end_date, r.created_at, r.updated_at "
+                        + "FROM reservation r";
 
         private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 

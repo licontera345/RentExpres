@@ -28,22 +28,21 @@ public class RentalDAOImpl implements RentalDAO {
 
         private static final Logger logger = LogManager.getLogger(RentalDAOImpl.class);
 
-        private static final String BASE_SELECT = String.join(" ",
-                        "SELECT r.rental_id, r.reservation_id, r.start_date_effective, r.end_date_effective,",
-                        "       r.initial_km, r.final_km, r.rental_status_id, r.total_cost,",
-                        "       r.pickup_headquarters_id, r.return_headquarters_id, r.created_at, r.updated_at,",
-                        "       res.vehicle_id, res.user_id,",
-                        "       v.license_plate, v.brand, v.model,",
-                        "       u.first_name AS user_first_name, u.last_name1 AS user_last_name1, u.phone AS user_phone,",
-                        "       s.status_name AS rental_status_name,",
-                        "       h1.name AS pickup_headquarters_name, h2.name AS return_headquarters_name",
-                        "FROM rental r",
-                        "INNER JOIN rental_status s ON r.rental_status_id = s.rental_status_id",
-                        "INNER JOIN reservation res ON r.reservation_id = res.reservation_id",
-                        "INNER JOIN vehicle v ON res.vehicle_id = v.vehicle_id",
-                        "INNER JOIN user u ON res.user_id = u.user_id",
-                        "INNER JOIN headquarters h1 ON r.pickup_headquarters_id = h1.headquarters_id",
-                        "INNER JOIN headquarters h2 ON r.return_headquarters_id = h2.headquarters_id");
+        private static final String BASE_SELECT = "SELECT r.rental_id, r.reservation_id, r.start_date_effective, r.end_date_effective, "
+                        + "       r.initial_km, r.final_km, r.rental_status_id, r.total_cost, "
+                        + "       r.pickup_headquarters_id, r.return_headquarters_id, r.created_at, r.updated_at, "
+                        + "       res.vehicle_id, res.user_id, "
+                        + "       v.license_plate, v.brand, v.model, "
+                        + "       u.first_name AS user_first_name, u.last_name1 AS user_last_name1, u.phone AS user_phone, "
+                        + "       s.status_name AS rental_status_name, "
+                        + "       h1.name AS pickup_headquarters_name, h2.name AS return_headquarters_name "
+                        + "FROM rental r "
+                        + "INNER JOIN rental_status s ON r.rental_status_id = s.rental_status_id "
+                        + "INNER JOIN reservation res ON r.reservation_id = res.reservation_id "
+                        + "INNER JOIN vehicle v ON res.vehicle_id = v.vehicle_id "
+                        + "INNER JOIN user u ON res.user_id = u.user_id "
+                        + "INNER JOIN headquarters h1 ON r.pickup_headquarters_id = h1.headquarters_id "
+                        + "INNER JOIN headquarters h2 ON r.return_headquarters_id = h2.headquarters_id";
 
         private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 

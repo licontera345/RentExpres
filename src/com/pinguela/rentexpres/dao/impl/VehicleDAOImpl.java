@@ -26,11 +26,10 @@ public class VehicleDAOImpl implements VehicleDAO {
 
         private static final Logger logger = LogManager.getLogger(VehicleDAOImpl.class);
 
-        private static final String BASE_SELECT = String.join(" ",
-                        "SELECT v.vehicle_id, v.brand, v.model, v.manufacture_year, v.daily_price,",
-                        "       v.license_plate, v.vin_number, v.current_mileage, v.vehicle_status_id,",
-                        "       v.category_id, v.current_headquarters_id, v.created_at, v.updated_at",
-                        "FROM vehicle v");
+        private static final String BASE_SELECT = "SELECT v.vehicle_id, v.brand, v.model, v.manufacture_year, v.daily_price, "
+                        + "       v.license_plate, v.vin_number, v.current_mileage, v.vehicle_status_id, "
+                        + "       v.category_id, v.current_headquarters_id, v.created_at, v.updated_at "
+                        + "FROM vehicle v";
 
         private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 

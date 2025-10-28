@@ -23,27 +23,26 @@ public class HeadquartersDAOImpl implements HeadquartersDAO {
 
     private static final Logger logger = LogManager.getLogger(HeadquartersDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT h.headquarters_id AS headquarters_id,",
-            "       h.name AS name,",
-            "       h.phone AS phone,",
-            "       h.email AS email,",
-            "       h.address_id AS address_id,",
-            "       h.created_at AS created_at,",
-            "       h.updated_at AS updated_at,",
-            "       a.address_id AS address_address_id,",
-            "       a.city_id AS address_city_id,",
-            "       a.street AS address_street,",
-            "       a.number AS address_number,",
-            "       c.city_id AS city_city_id,",
-            "       c.city_name AS city_city_name,",
-            "       c.province_id AS city_province_id,",
-            "       p.province_id AS province_province_id,",
-            "       p.province_name AS province_province_name",
-            "FROM headquarters h",
-            "INNER JOIN address a ON a.address_id = h.address_id",
-            "INNER JOIN city c ON c.city_id = a.city_id",
-            "INNER JOIN province p ON p.province_id = c.province_id");
+    private static final String BASE_SELECT = "SELECT h.headquarters_id AS headquarters_id, "
+            + "       h.name AS name, "
+            + "       h.phone AS phone, "
+            + "       h.email AS email, "
+            + "       h.address_id AS address_id, "
+            + "       h.created_at AS created_at, "
+            + "       h.updated_at AS updated_at, "
+            + "       a.address_id AS address_address_id, "
+            + "       a.city_id AS address_city_id, "
+            + "       a.street AS address_street, "
+            + "       a.number AS address_number, "
+            + "       c.city_id AS city_city_id, "
+            + "       c.city_name AS city_city_name, "
+            + "       c.province_id AS city_province_id, "
+            + "       p.province_id AS province_province_id, "
+            + "       p.province_name AS province_province_name "
+            + "FROM headquarters h "
+            + "INNER JOIN address a ON a.address_id = h.address_id "
+            + "INNER JOIN city c ON c.city_id = a.city_id "
+            + "INNER JOIN province p ON p.province_id = c.province_id";
 
     @Override
     public HeadquartersDTO findById(Connection connection, Integer id) throws DataException {

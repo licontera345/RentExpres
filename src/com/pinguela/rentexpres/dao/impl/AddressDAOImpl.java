@@ -17,12 +17,11 @@ public class AddressDAOImpl implements AddressDAO {
 
         private static final Logger logger = LogManager.getLogger(AddressDAOImpl.class);
 
-        private static final String BASE_SELECT = String.join(" ",
-                        "SELECT a.address_id, a.city_id, a.street, a.number,",
-                        "       c.city_name, c.province_id, p.province_name",
-                        "FROM address a",
-                        "INNER JOIN city c ON a.city_id = c.city_id",
-                        "INNER JOIN province p ON c.province_id = p.province_id");
+        private static final String BASE_SELECT = "SELECT a.address_id, a.city_id, a.street, a.number, "
+                        + "       c.city_name, c.province_id, p.province_name "
+                        + "FROM address a "
+                        + "INNER JOIN city c ON a.city_id = c.city_id "
+                        + "INNER JOIN province p ON c.province_id = p.province_id";
 
         @Override
         public AddressDTO findById(Connection connection, Integer id) throws DataException {

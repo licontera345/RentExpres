@@ -19,10 +19,9 @@ public class ProvinceDAOImpl implements ProvinceDAO {
 
     private static final Logger logger = LogManager.getLogger(ProvinceDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT p.province_id AS province_id,",
-            "       p.province_name AS province_name",
-            "FROM province p");
+    private static final String BASE_SELECT = "SELECT p.province_id AS province_id, "
+            + "       p.province_name AS province_name "
+            + "FROM province p";
 
     @Override
     public ProvinceDTO findById(Connection connection, Integer id) throws DataException {
