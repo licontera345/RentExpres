@@ -18,18 +18,16 @@ public class ReservationStatusDAOImpl implements ReservationStatusDAO {
 
     private static final Logger logger = LogManager.getLogger(ReservationStatusDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT rs.reservation_status_id AS reservation_status_id,",
-            "       rs.status_name AS status_name",
-            "FROM reservation_status rs");
+    private static final String BASE_SELECT = "SELECT rs.reservation_status_id AS reservation_status_id, "
+            + "       rs.status_name AS status_name "
+            + "FROM reservation_status rs";
 
-    private static final String I18N_SELECT = String.join(" ",
-            "SELECT rs.reservation_status_id AS reservation_status_id,",
-            "       COALESCE(rsl.translated_name, rs.status_name) AS status_name",
-            "FROM reservation_status rs",
-            "LEFT JOIN language l ON l.iso_code = ?",
-            "LEFT JOIN reservation_status_language rsl",
-            "       ON rsl.reservation_status_id = rs.reservation_status_id AND rsl.language_id = l.language_id");
+    private static final String I18N_SELECT = "SELECT rs.reservation_status_id AS reservation_status_id, "
+            + "       COALESCE(rsl.translated_name, rs.status_name) AS status_name "
+            + "FROM reservation_status rs "
+            + "LEFT JOIN language l ON l.iso_code = ? "
+            + "LEFT JOIN reservation_status_language rsl "
+            + "       ON rsl.reservation_status_id = rs.reservation_status_id AND rsl.language_id = l.language_id";
 
     @Override
     public ReservationStatusDTO findById(Connection connection, Integer id, String isoCode) throws DataException {

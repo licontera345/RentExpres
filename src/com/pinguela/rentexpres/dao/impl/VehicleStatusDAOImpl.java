@@ -18,18 +18,16 @@ public class VehicleStatusDAOImpl implements VehicleStatusDAO {
 
     private static final Logger logger = LogManager.getLogger(VehicleStatusDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT vs.vehicle_status_id AS vehicle_status_id,",
-            "       vs.status_name AS status_name",
-            "FROM vehicle_status vs");
+    private static final String BASE_SELECT = "SELECT vs.vehicle_status_id AS vehicle_status_id, "
+            + "       vs.status_name AS status_name "
+            + "FROM vehicle_status vs";
 
-    private static final String I18N_SELECT = String.join(" ",
-            "SELECT vs.vehicle_status_id AS vehicle_status_id,",
-            "       COALESCE(vsl.translated_name, vs.status_name) AS status_name",
-            "FROM vehicle_status vs",
-            "LEFT JOIN language l ON l.iso_code = ?",
-            "LEFT JOIN vehicle_status_language vsl",
-            "       ON vsl.vehicle_status_id = vs.vehicle_status_id AND vsl.language_id = l.language_id");
+    private static final String I18N_SELECT = "SELECT vs.vehicle_status_id AS vehicle_status_id, "
+            + "       COALESCE(vsl.translated_name, vs.status_name) AS status_name "
+            + "FROM vehicle_status vs "
+            + "LEFT JOIN language l ON l.iso_code = ? "
+            + "LEFT JOIN vehicle_status_language vsl "
+            + "       ON vsl.vehicle_status_id = vs.vehicle_status_id AND vsl.language_id = l.language_id";
 
     @Override
     public VehicleStatusDTO findById(Connection connection, Integer id, String isoCode) throws DataException {

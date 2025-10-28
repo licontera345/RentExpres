@@ -18,18 +18,16 @@ public class RentalStatusDAOImpl implements RentalStatusDAO {
 
     private static final Logger logger = LogManager.getLogger(RentalStatusDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT rs.rental_status_id AS rental_status_id,",
-            "       rs.status_name AS status_name",
-            "FROM rental_status rs");
+    private static final String BASE_SELECT = "SELECT rs.rental_status_id AS rental_status_id, "
+            + "       rs.status_name AS status_name "
+            + "FROM rental_status rs";
 
-    private static final String I18N_SELECT = String.join(" ",
-            "SELECT rs.rental_status_id AS rental_status_id,",
-            "       COALESCE(rsl.translated_name, rs.status_name) AS status_name",
-            "FROM rental_status rs",
-            "LEFT JOIN language l ON l.iso_code = ?",
-            "LEFT JOIN rental_status_language rsl",
-            "       ON rsl.rental_status_id = rs.rental_status_id AND rsl.language_id = l.language_id");
+    private static final String I18N_SELECT = "SELECT rs.rental_status_id AS rental_status_id, "
+            + "       COALESCE(rsl.translated_name, rs.status_name) AS status_name "
+            + "FROM rental_status rs "
+            + "LEFT JOIN language l ON l.iso_code = ? "
+            + "LEFT JOIN rental_status_language rsl "
+            + "       ON rsl.rental_status_id = rs.rental_status_id AND rsl.language_id = l.language_id";
 
     @Override
     public RentalStatusDTO findById(Connection connection, Integer id, String isoCode) throws DataException {

@@ -30,11 +30,10 @@ public class UserDAOImpl implements UserDAO {
 
         private static final StrongPasswordEncryptor ENCRYPTOR = new StrongPasswordEncryptor();
 
-        private static final String BASE_SELECT = String.join(" ",
-                        "SELECT u.user_id, u.username, u.first_name, u.last_name1, u.last_name2,",
-                        "       u.birth_date, u.email, u.password, u.role_id, u.phone, u.address_id,",
-                        "       u.active_status, u.created_at, u.updated_at",
-                        "FROM user u");
+        private static final String BASE_SELECT = "SELECT u.user_id, u.username, u.first_name, u.last_name1, u.last_name2, "
+                        + "       u.birth_date, u.email, u.password, u.role_id, u.phone, u.address_id, "
+                        + "       u.active_status, u.created_at, u.updated_at "
+                        + "FROM user u";
 
         private static final Map<String, String> ORDER_BY_COLUMNS = buildOrderColumns();
 

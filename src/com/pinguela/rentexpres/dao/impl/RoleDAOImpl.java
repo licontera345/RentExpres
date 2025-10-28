@@ -18,10 +18,9 @@ public class RoleDAOImpl implements RoleDAO {
 
     private static final Logger logger = LogManager.getLogger(RoleDAOImpl.class);
 
-    private static final String BASE_SELECT = String.join(" ",
-            "SELECT r.role_id AS role_id,",
-            "       r.role_name AS role_name",
-            "FROM role r");
+    private static final String BASE_SELECT = "SELECT r.role_id AS role_id, "
+            + "       r.role_name AS role_name "
+            + "FROM role r";
 
     @Override
     public RoleDTO findById(Connection connection, Integer id) throws DataException {
