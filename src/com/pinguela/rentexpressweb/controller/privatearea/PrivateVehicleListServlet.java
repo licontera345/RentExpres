@@ -22,7 +22,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.HeadquartersDTO;
 import com.pinguela.rentexpres.model.Results;
 import com.pinguela.rentexpres.model.VehicleCategoryDTO;
 import com.pinguela.rentexpres.model.VehicleCriteria;
@@ -39,6 +38,7 @@ import com.pinguela.rentexpres.service.impl.VehicleCategoryServiceImpl;
 import com.pinguela.rentexpres.service.impl.VehicleServiceImpl;
 import com.pinguela.rentexpres.service.impl.VehicleStatusServiceImpl;
 import com.pinguela.rentexpres.util.WebConstants;
+import com.pinguela.rentexpressweb.util.CatalogLoader;
 
 @WebServlet(urlPatterns = WebConstants.URL_PRIVATE_VEHICLE_LIST)
 public class PrivateVehicleListServlet extends HttpServlet {
@@ -176,12 +176,11 @@ public class PrivateVehicleListServlet extends HttpServlet {
         String locale = resolveLocale(session);
         try {
             List<VehicleStatusDTO> statuses = vehicleStatusService.findAll(locale);
-            List<VehicleCategoryDTO> categories = vehicleCategoryService.findAll(locale);
-            List<HeadquartersDTO> headquarters = headquartersService.findAll();
+            List<VehicleCategoryDTO> categories = CatalogLoader.loadCategories(request, vehicleCategoryService, locale);
+            List<com.pinguela.rentexpres.model.HeadquartersDTO> headquarters = CatalogLoader
+                    .loadHeadquarters(request, headquartersService);
 
             request.setAttribute("vehicleStatuses", statuses);
-            request.setAttribute("vehicleCategories", categories);
-            request.setAttribute("headquarters", headquarters);
             request.setAttribute("vehicleStatusMap", buildStatusMap(statuses));
             request.setAttribute("vehicleCategoryMap", buildCategoryMap(categories));
         } catch (RentexpresException e) {
@@ -204,7 +203,7 @@ public class PrivateVehicleListServlet extends HttpServlet {
         Map<Integer, String> map = new LinkedHashMap<Integer, String>();
         if (categories != null) {
             for (VehicleCategoryDTO category : categories) {
-                map.put(category.getCategoryId(), category.getName());
+                map.put(category.getCategoryId(), category.getCategoryName());
             }
         }
         return map;
