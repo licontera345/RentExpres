@@ -36,6 +36,7 @@ import com.pinguela.rentexpres.service.VehicleService;
 import com.pinguela.rentexpres.service.impl.VehicleManagementServiceImpl;
 import com.pinguela.rentexpres.service.impl.VehicleServiceImpl;
 import com.pinguela.rentexpres.util.WebConstants;
+import com.pinguela.rentexpressweb.util.CatalogLoader;
 
 @WebServlet("/private/vehicles/save")
 @MultipartConfig

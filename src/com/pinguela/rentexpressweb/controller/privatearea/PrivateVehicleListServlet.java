@@ -26,6 +26,7 @@ import com.pinguela.rentexpres.service.VehicleService;
 import com.pinguela.rentexpres.service.impl.VehicleManagementServiceImpl;
 import com.pinguela.rentexpres.service.impl.VehicleServiceImpl;
 import com.pinguela.rentexpres.util.WebConstants;
+import com.pinguela.rentexpressweb.util.CatalogLoader;
 
 @WebServlet(urlPatterns = WebConstants.URL_PRIVATE_VEHICLE_LIST)
 public class PrivateVehicleListServlet extends BasePrivateServlet {
