@@ -8,6 +8,7 @@ public final class WebConstants {
 
     public static final String SESSION_USER = "currentUser";
     public static final String SESSION_RESERVATION_DRAFT = "reservationDraft";
+    public static final String SESSION_ROLE = "role";
 
     public static final String REQUEST_ERRORS = "error";
     public static final String REQUEST_VEHICLE = "vehicle";
@@ -45,4 +46,8 @@ public final class WebConstants {
     public static final String MESSAGE_SUCCESS_VEHICLE_UPDATED = "success.vehicle.updated";
     public static final String MESSAGE_SUCCESS_VEHICLE_DELETED = "success.vehicle.deleted";
     public static final String MESSAGE_ERROR_VEHICLE_DELETE = "error.vehicle.delete";
+
+    public static final String ROLE_ADMIN = "ADMIN";
+    public static final String ROLE_EMPLOYEE = "EMPLOYEE";
+    public static final String ROLE_CLIENT = "CLIENT";
 }
