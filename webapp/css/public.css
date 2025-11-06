@@ -1,0 +1,155 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f7fa;
+    color: #1f2933;
+    margin: 0;
+    padding: 0;
+}
+
+main.form-wrapper {
+    max-width: 960px;
+    margin: 2rem auto;
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+}
+
+header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+}
+
+header p {
+    margin: 0 0 1.5rem 0;
+    color: #52606d;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 1px solid #d2d6dc;
+    border-radius: 10px;
+    background-color: #f9fafb;
+}
+
+.form-section h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #364152;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-weight: 600;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select {
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #cbd2d9;
+    border-radius: 6px;
+    font-size: 1rem;
+    color: #1f2933;
+    background-color: #ffffff;
+}
+
+input:focus,
+select:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn.primary {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+.btn.secondary {
+    background-color: #e4e7eb;
+    color: #364152;
+}
+
+.btn.primary:hover {
+    background-color: #1d4ed8;
+}
+
+.btn.secondary:hover {
+    background-color: #cbd2d9;
+}
+
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background-color: #def7ec;
+    color: #03543f;
+}
+
+.alert-error {
+    background-color: #fde8e8;
+    color: #9b1c1c;
+}
+
+.field-error {
+    color: #b91c1c;
+    font-size: 0.85rem;
+}
+
+.alert-error ul {
+    margin: 0.5rem 0 0 1.25rem;
+    padding: 0;
+}
+
+@media (max-width: 600px) {
+    main.form-wrapper {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
