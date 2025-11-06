@@ -7,7 +7,6 @@ import java.util.Map;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -24,7 +23,7 @@ import com.pinguela.rentexpres.service.impl.VehicleServiceImpl;
 import com.pinguela.rentexpres.util.WebConstants;
 
 @WebServlet(WebConstants.URL_PRIVATE_RESERVATION_START)
-public class PrivateReservationServlet extends HttpServlet {
+public class PrivateReservationServlet extends BasePrivateServlet {
 
     private static final long serialVersionUID = 1L;
     private static final Logger logger = LogManager.getLogger(PrivateReservationServlet.class);
@@ -41,9 +40,8 @@ public class PrivateReservationServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         applyNoCache(response);
 
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute(WebConstants.SESSION_USER) == null) {
-            response.sendRedirect(request.getContextPath() + WebConstants.URL_LOGIN);
+        HttpSession session = requireAuthenticatedSession(request, response);
+        if (session == null) {
             return;
         }
 
@@ -126,11 +124,5 @@ public class PrivateReservationServlet extends HttpServlet {
 
         RequestDispatcher dispatcher = request.getRequestDispatcher(WebConstants.VIEW_PRIVATE_RESERVATION_START);
         dispatcher.forward(request, response);
-    }
-
-    private void applyNoCache(HttpServletResponse response) {
-        response.setHeader("Cache-Control", "no-store");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
     }
 }

@@ -5,22 +5,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -30,54 +27,38 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.model.HeadquartersDTO;
 import com.pinguela.rentexpres.model.Results;
-import com.pinguela.rentexpres.model.VehicleCategoryDTO;
 import com.pinguela.rentexpres.model.VehicleCriteria;
 import com.pinguela.rentexpres.model.VehicleDTO;
-import com.pinguela.rentexpres.model.VehicleStatusDTO;
-import com.pinguela.rentexpres.service.FileService;
-import com.pinguela.rentexpres.service.HeadquartersService;
-import com.pinguela.rentexpres.service.VehicleCategoryService;
+import com.pinguela.rentexpres.model.VehicleReferenceData;
+import com.pinguela.rentexpres.service.VehicleManagementService;
 import com.pinguela.rentexpres.service.VehicleService;
-import com.pinguela.rentexpres.service.VehicleStatusService;
-import com.pinguela.rentexpres.service.impl.FileServiceImpl;
-import com.pinguela.rentexpres.service.impl.HeadquartersServiceImpl;
-import com.pinguela.rentexpres.service.impl.VehicleCategoryServiceImpl;
+import com.pinguela.rentexpres.service.impl.VehicleManagementServiceImpl;
 import com.pinguela.rentexpres.service.impl.VehicleServiceImpl;
-import com.pinguela.rentexpres.service.impl.VehicleStatusServiceImpl;
 import com.pinguela.rentexpres.util.WebConstants;
 
 @WebServlet("/private/vehicles/save")
 @MultipartConfig
-public class PrivateVehicleSaveServlet extends HttpServlet {
+public class PrivateVehicleSaveServlet extends BasePrivateServlet {
 
     private static final long serialVersionUID = 1L;
     private static final Logger logger = LogManager.getLogger(PrivateVehicleSaveServlet.class);
-    private static final List<Integer> PAGE_SIZES = Collections.unmodifiableList(Arrays.asList(10, 20, 25, 50, 100));
 
     private transient VehicleService vehicleService;
-    private transient VehicleStatusService vehicleStatusService;
-    private transient VehicleCategoryService vehicleCategoryService;
-    private transient HeadquartersService headquartersService;
-    private transient FileService fileService;
+    private transient VehicleManagementService vehicleManagementService;
 
     @Override
     public void init() throws ServletException {
         super.init();
         this.vehicleService = new VehicleServiceImpl();
-        this.vehicleStatusService = new VehicleStatusServiceImpl();
-        this.vehicleCategoryService = new VehicleCategoryServiceImpl();
-        this.headquartersService = new HeadquartersServiceImpl();
-        this.fileService = new FileServiceImpl();
+        this.vehicleManagementService = new VehicleManagementServiceImpl();
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         applyNoCache(response);
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute(WebConstants.SESSION_USER) == null) {
-            response.sendRedirect(request.getContextPath() + WebConstants.URL_LOGIN);
+        HttpSession session = requireAuthenticatedSession(request, response);
+        if (session == null) {
             return;
         }
 
@@ -160,36 +141,11 @@ public class PrivateVehicleSaveServlet extends HttpServlet {
             throw new ServletException("Unable to save vehicle", e);
         }
 
-        List<File> filesToSync = new ArrayList<File>();
         List<File> tempFiles = new ArrayList<File>();
         try {
-            if (!createOperation) {
-                List<File> currentImages = fileService.getImagesByVehicleId(vehicle.getVehicleId());
-                Set<String> keepImages = extractExistingSelection(request);
-                if (!currentImages.isEmpty()) {
-                    for (File file : currentImages) {
-                        if (keepImages.contains(file.getName())) {
-                            filesToSync.add(file);
-                        }
-                    }
-                }
-            }
-
-            for (Part part : request.getParts()) {
-                if (!"images".equals(part.getName()) || part.getSize() <= 0) {
-                    continue;
-                }
-                File temp = File.createTempFile("vehicle-image-", getExtension(part));
-                try (InputStream in = part.getInputStream()) {
-                    Files.copy(in, temp.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                }
-                filesToSync.add(temp);
-                tempFiles.add(temp);
-            }
-
-            if (!filesToSync.isEmpty() || !createOperation) {
-                fileService.uploadImagesByVehicleId(filesToSync, vehicle.getVehicleId());
-            }
+            Set<String> keepImages = extractExistingSelection(request);
+            List<File> newImages = collectUploadedImages(request, tempFiles);
+            vehicleManagementService.synchronizeVehicleImages(vehicle.getVehicleId(), keepImages, newImages);
         } catch (RentexpresException e) {
             logger.error("Error synchronising vehicle images", e);
             throw new ServletException("Unable to process vehicle images", e);
@@ -222,14 +178,13 @@ public class PrivateVehicleSaveServlet extends HttpServlet {
 
     private List<String> loadExistingImageNames(VehicleDTO vehicle) {
         if (vehicle == null || vehicle.getVehicleId() == null) {
-            return new ArrayList<String>();
+            return Collections.emptyList();
         }
         try {
-            List<File> current = fileService.getImagesByVehicleId(vehicle.getVehicleId());
-            return current.stream().map(File::getName).collect(Collectors.toList());
+            return vehicleManagementService.loadVehicleImageNames(vehicle.getVehicleId());
         } catch (RentexpresException e) {
             logger.warn("Error loading existing images for vehicle {}", vehicle.getVehicleId(), e);
-            return new ArrayList<String>();
+            return Collections.emptyList();
         }
     }
 
@@ -238,7 +193,7 @@ public class PrivateVehicleSaveServlet extends HttpServlet {
         criteria.setPageNumber(Integer.valueOf(1));
         criteria.setPageSize(Integer.valueOf(10));
         try {
-            Results<VehicleDTO> results = vehicleService.findByCriteria(criteria);
+            Results<VehicleDTO> results = vehicleManagementService.loadVehicleSnapshot();
             request.setAttribute(WebConstants.REQUEST_VEHICLE_RESULTS, results);
         } catch (RentexpresException e) {
             logger.warn("Error loading vehicle list snapshot", e);
@@ -256,40 +211,34 @@ public class PrivateVehicleSaveServlet extends HttpServlet {
     private void populateReferenceData(HttpServletRequest request, HttpSession session) throws ServletException {
         String locale = resolveLocale(session);
         try {
-            List<VehicleStatusDTO> statuses = vehicleStatusService.findAll(locale);
-            List<VehicleCategoryDTO> categories = vehicleCategoryService.findAll(locale);
-            List<HeadquartersDTO> headquarters = headquartersService.findAll();
-
-            request.setAttribute("vehicleStatuses", statuses);
-            request.setAttribute("vehicleCategories", categories);
-            request.setAttribute("headquarters", headquarters);
-            request.setAttribute("vehicleStatusMap", buildStatusMap(statuses));
-            request.setAttribute("vehicleCategoryMap", buildCategoryMap(categories));
+            VehicleReferenceData referenceData = vehicleManagementService.loadReferenceData(locale);
+            request.setAttribute("vehicleStatuses", referenceData.getVehicleStatuses());
+            request.setAttribute("vehicleCategories", referenceData.getVehicleCategories());
+            request.setAttribute("headquarters", referenceData.getHeadquarters());
+            request.setAttribute("vehicleStatusMap", referenceData.getVehicleStatusMap());
+            request.setAttribute("vehicleCategoryMap", referenceData.getVehicleCategoryMap());
+            request.setAttribute(WebConstants.REQUEST_PAGE_SIZES, referenceData.getPageSizes());
         } catch (RentexpresException e) {
             logger.error("Error loading reference data for vehicle form", e);
             throw new ServletException("Unable to load vehicle reference data", e);
         }
-        request.setAttribute(WebConstants.REQUEST_PAGE_SIZES, PAGE_SIZES);
     }
 
-    private Map<Integer, String> buildStatusMap(List<VehicleStatusDTO> statuses) {
-        Map<Integer, String> map = new LinkedHashMap<Integer, String>();
-        if (statuses != null) {
-            for (VehicleStatusDTO status : statuses) {
-                map.put(status.getVehicleStatusId(), status.getName());
+    private List<File> collectUploadedImages(HttpServletRequest request, List<File> tempFiles)
+            throws IOException, ServletException {
+        List<File> uploads = new ArrayList<File>();
+        for (Part part : request.getParts()) {
+            if (!"images".equals(part.getName()) || part.getSize() <= 0) {
+                continue;
             }
-        }
-        return map;
-    }
-
-    private Map<Integer, String> buildCategoryMap(List<VehicleCategoryDTO> categories) {
-        Map<Integer, String> map = new LinkedHashMap<Integer, String>();
-        if (categories != null) {
-            for (VehicleCategoryDTO category : categories) {
-                map.put(category.getCategoryId(), category.getName());
+            File temp = File.createTempFile("vehicle-image-", getExtension(part));
+            try (InputStream in = part.getInputStream()) {
+                Files.copy(in, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
+            uploads.add(temp);
+            tempFiles.add(temp);
         }
-        return map;
+        return uploads;
     }
 
     private Set<String> extractExistingSelection(HttpServletRequest request) {
@@ -299,35 +248,14 @@ public class PrivateVehicleSaveServlet extends HttpServlet {
         }
         Set<String> set = new LinkedHashSet<String>();
         for (String value : selected) {
-            if (value != null && !value.trim().isEmpty()) {
-                set.add(value.trim());
+            if (value != null) {
+                String cleaned = value.trim();
+                if (!cleaned.isEmpty()) {
+                    set.add(cleaned);
+                }
             }
         }
         return set;
-    }
-
-    private Integer parseInteger(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(value.trim());
-        } catch (NumberFormatException ex) {
-            logger.debug("Invalid integer value received: {}", value, ex);
-            return null;
-        }
-    }
-
-    private BigDecimal parseBigDecimal(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return new BigDecimal(value.trim());
-        } catch (NumberFormatException ex) {
-            logger.debug("Invalid decimal value received: {}", value, ex);
-            return null;
-        }
     }
 
     private void validateRequired(String value, String field, Map<String, String> errors, String messageKey) {
@@ -344,17 +272,6 @@ public class PrivateVehicleSaveServlet extends HttpServlet {
         return cleaned.isEmpty() ? null : cleaned;
     }
 
-    private String resolveLocale(HttpSession session) {
-        Object localeAttr = session.getAttribute("locale");
-        if (localeAttr instanceof String) {
-            String value = ((String) localeAttr).trim();
-            if (!value.isEmpty()) {
-                return value;
-            }
-        }
-        return Locale.getDefault().getLanguage();
-    }
-
     private String getExtension(Part part) {
         String submitted = part.getSubmittedFileName();
         if (submitted == null) {
@@ -362,11 +279,5 @@ public class PrivateVehicleSaveServlet extends HttpServlet {
         }
         int idx = submitted.lastIndexOf('.');
         return idx >= 0 ? submitted.substring(idx) : ".tmp";
-    }
-
-    private void applyNoCache(HttpServletResponse response) {
-        response.setHeader("Cache-Control", "no-store");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
     }
 }
