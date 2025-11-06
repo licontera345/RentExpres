@@ -40,6 +40,7 @@ public class PublicUserServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = LogManager.getLogger(PublicUserServlet.class);
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+    private static final int MIN_PASSWORD_LENGTH = 6;
 
     private final ProvinceService provinceService;
     private final CityService cityService;
@@ -79,24 +80,26 @@ public class PublicUserServlet extends HttpServlet {
         validateForm(request, formData, errors);
 
         if (!errors.isEmpty()) {
-            request.setAttribute("formData", formData);
-            request.setAttribute("errors", errors);
+            clearSensitiveFields(formData);
+            request.setAttribute(AppConstants.ATTR_FORM_DATA, formData);
+            request.setAttribute(AppConstants.ATTR_ERRORS, errors);
             loadReferenceData(request);
             forward(request, response);
             return;
         }
 
         if (!registerUser(request, formData, errors)) {
-            request.setAttribute("formData", formData);
-            request.setAttribute("errors", errors);
+            clearSensitiveFields(formData);
+            request.setAttribute(AppConstants.ATTR_FORM_DATA, formData);
+            request.setAttribute(AppConstants.ATTR_ERRORS, errors);
             loadReferenceData(request);
             forward(request, response);
             return;
         }
 
-        request.setAttribute("formData", new HashMap<String, String>());
-        request.setAttribute("errors", new HashMap<String, String>());
-        request.setAttribute("flashSuccess",
+        request.setAttribute(AppConstants.ATTR_FORM_DATA, new HashMap<String, String>());
+        request.setAttribute(AppConstants.ATTR_ERRORS, new HashMap<String, String>());
+        request.setAttribute(AppConstants.ATTR_FLASH_SUCCESS,
                 MessageResolver.getMessage(request, "register.user.flash.success"));
         loadReferenceData(request);
         forward(request, response);
@@ -108,16 +111,16 @@ public class PublicUserServlet extends HttpServlet {
     }
 
     private void ensureFormData(HttpServletRequest request) {
-        if (!(request.getAttribute("formData") instanceof Map)) {
-            request.setAttribute("formData", new HashMap<String, String>());
+        if (!(request.getAttribute(AppConstants.ATTR_FORM_DATA) instanceof Map)) {
+            request.setAttribute(AppConstants.ATTR_FORM_DATA, new HashMap<String, String>());
         }
-        if (!(request.getAttribute("errors") instanceof Map)) {
-            request.setAttribute("errors", new HashMap<String, String>());
+        if (!(request.getAttribute(AppConstants.ATTR_ERRORS) instanceof Map)) {
+            request.setAttribute(AppConstants.ATTR_ERRORS, new HashMap<String, String>());
         }
     }
 
     private Map<String, String> captureFormData(HttpServletRequest request) {
-        Map<String, String> formData = new HashMap<>();
+        Map<String, String> formData = new LinkedHashMap<>();
         formData.put("firstName", param(request, "firstName"));
         formData.put("lastName1", param(request, "lastName1"));
         formData.put("lastName2", param(request, "lastName2"));
@@ -125,7 +128,7 @@ public class PublicUserServlet extends HttpServlet {
         formData.put("password", param(request, "password"));
         formData.put("phone", param(request, "phone"));
         formData.put("street", param(request, "street"));
-        formData.put("postalCode", param(request, "postalCode"));
+        formData.put("addressNumber", param(request, "addressNumber"));
         formData.put("provinceId", param(request, "provinceId"));
         formData.put("cityId", param(request, "cityId"));
         return formData;
@@ -136,7 +139,7 @@ public class PublicUserServlet extends HttpServlet {
         requireValue(request, formData, "firstName", "register.user.error.firstName", errors);
         requireValue(request, formData, "lastName1", "register.user.error.lastName1", errors);
         requireValue(request, formData, "street", "register.user.error.street", errors);
-        requireValue(request, formData, "postalCode", "register.user.error.postalCode", errors);
+        requireValue(request, formData, "addressNumber", "register.user.error.addressNumber", errors);
 
         String email = formData.get("email");
         if (email == null || email.isEmpty()) {
@@ -148,7 +151,7 @@ public class PublicUserServlet extends HttpServlet {
         String password = formData.get("password");
         if (password == null || password.isEmpty()) {
             errors.put("password", MessageResolver.getMessage(request, "register.user.error.password"));
-        } else if (password.length() < 6) {
+        } else if (password.length() < MIN_PASSWORD_LENGTH) {
             errors.put("password", MessageResolver.getMessage(request, "register.user.error.password.length"));
         }
 
@@ -161,17 +164,41 @@ public class PublicUserServlet extends HttpServlet {
     }
 
     private boolean registerUser(HttpServletRequest request, Map<String, String> formData, Map<String, String> errors) {
+        Integer provinceId = parseInteger(formData.get("provinceId"));
+        if (provinceId == null) {
+            errors.put("provinceId", MessageResolver.getMessage(request, "register.user.error.province"));
+            return false;
+        }
         Integer cityId = parseInteger(formData.get("cityId"));
         if (cityId == null) {
             errors.put("cityId", MessageResolver.getMessage(request, "register.user.error.city"));
             return false;
         }
 
+        CityDTO city;
+        try {
+            city = cityService.findById(cityId);
+        } catch (RentexpresException ex) {
+            LOGGER.error("Error retrieving city {} during public registration", cityId, ex);
+            setGeneralError(request, errors);
+            return false;
+        }
+
+        if (city == null) {
+            errors.put("cityId", MessageResolver.getMessage(request, "register.user.error.city.notFound"));
+            return false;
+        }
+
+        if (!provinceId.equals(city.getProvinceId())) {
+            errors.put("cityId", MessageResolver.getMessage(request, "register.user.error.city.mismatch"));
+            return false;
+        }
+
         AddressDTO address = new AddressDTO();
         address.setCityId(cityId);
-        address.setProvinceId(parseInteger(formData.get("provinceId")));
+        address.setProvinceId(provinceId);
         address.setStreet(formData.get("street"));
-        address.setNumber(formData.get("postalCode"));
+        address.setNumber(formData.get("addressNumber"));
 
         try {
             if (!addressService.create(address)) {
@@ -269,6 +296,12 @@ public class PublicUserServlet extends HttpServlet {
     private void setGeneralError(HttpServletRequest request, Map<String, String> errors) {
         String message = MessageResolver.getMessage(request, "register.user.error.general");
         errors.put("generalError", message);
-        request.setAttribute("errorGeneral", message);
+        request.setAttribute(AppConstants.ATTR_FLASH_ERROR, message);
+    }
+
+    private void clearSensitiveFields(Map<String, String> formData) {
+        if (formData != null) {
+            formData.put("password", "");
+        }
     }
 }
