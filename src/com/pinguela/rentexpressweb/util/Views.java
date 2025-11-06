@@ -6,6 +6,5 @@ public final class Views {
         // Utility class
     }
 
-    public static final String PUBLIC_REGISTER_USER = "/public/user/register-user.jsp";
-    public static final String PUBLIC_REGISTER_EMPLOYEE = "/public/employee/employee-register.jsp";
+    public static final String PUBLIC_REGISTER_USER = "/public/user/register.jsp";
 }

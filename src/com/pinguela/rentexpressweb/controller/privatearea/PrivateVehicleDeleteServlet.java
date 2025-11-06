@@ -4,12 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -18,34 +16,33 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.pinguela.rentexpres.exception.RentexpresException;
-import com.pinguela.rentexpres.service.FileService;
 import com.pinguela.rentexpres.service.VehicleService;
-import com.pinguela.rentexpres.service.impl.FileServiceImpl;
+import com.pinguela.rentexpres.service.VehicleManagementService;
 import com.pinguela.rentexpres.service.impl.VehicleServiceImpl;
+import com.pinguela.rentexpres.service.impl.VehicleManagementServiceImpl;
 import com.pinguela.rentexpres.util.WebConstants;
 
 @WebServlet("/private/vehicles/delete")
-public class PrivateVehicleDeleteServlet extends HttpServlet {
+public class PrivateVehicleDeleteServlet extends BasePrivateServlet {
 
     private static final long serialVersionUID = 1L;
     private static final Logger logger = LogManager.getLogger(PrivateVehicleDeleteServlet.class);
 
     private transient VehicleService vehicleService;
-    private transient FileService fileService;
+    private transient VehicleManagementService vehicleManagementService;
 
     @Override
     public void init() throws ServletException {
         super.init();
         this.vehicleService = new VehicleServiceImpl();
-        this.fileService = new FileServiceImpl();
+        this.vehicleManagementService = new VehicleManagementServiceImpl();
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         applyNoCache(response);
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute(WebConstants.SESSION_USER) == null) {
-            response.sendRedirect(request.getContextPath() + WebConstants.URL_LOGIN);
+        HttpSession session = requireAuthenticatedSession(request, response);
+        if (session == null) {
             return;
         }
 
@@ -76,30 +73,10 @@ public class PrivateVehicleDeleteServlet extends HttpServlet {
 
     private void removeVehicleImages(Integer vehicleId) {
         try {
-            List<File> current = fileService.getImagesByVehicleId(vehicleId);
-            if (!current.isEmpty()) {
-                fileService.uploadImagesByVehicleId(Collections.<File>emptyList(), vehicleId);
-            }
+            vehicleManagementService.synchronizeVehicleImages(vehicleId, Collections.<String>emptySet(),
+                    Collections.<File>emptyList());
         } catch (RentexpresException e) {
             logger.warn("Error removing images for deleted vehicle {}", vehicleId, e);
         }
-    }
-
-    private Integer parseInteger(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(value.trim());
-        } catch (NumberFormatException ex) {
-            logger.debug("Invalid integer value received: {}", value, ex);
-            return null;
-        }
-    }
-
-    private void applyNoCache(HttpServletResponse response) {
-        response.setHeader("Cache-Control", "no-store");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
     }
 }
