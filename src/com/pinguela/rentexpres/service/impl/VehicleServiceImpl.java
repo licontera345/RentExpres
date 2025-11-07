@@ -153,11 +153,11 @@ public class VehicleServiceImpl implements VehicleService {
 	}
 
 	@Override
-	public Results<VehicleDTO> findByCriteria(VehicleCriteria criteria) throws RentexpresException {
-		Connection connection = null;
-		try {
-			connection = JDBCUtils.getConnection();
-			JDBCUtils.beginTransaction(connection);
+        public Results<VehicleDTO> findByCriteria(VehicleCriteria criteria) throws RentexpresException {
+                Connection connection = null;
+                try {
+                        connection = JDBCUtils.getConnection();
+                        JDBCUtils.beginTransaction(connection);
 
 			if (criteria == null) {
 				criteria = new VehicleCriteria();
@@ -178,9 +178,22 @@ public class VehicleServiceImpl implements VehicleService {
 			JDBCUtils.rollbackTransaction(connection);
 			logger.error("Error during vehicle search by criteria", e);
 			throw new RentexpresException("Error during vehicle search by criteria", e);
-		} finally {
-			JDBCUtils.close(connection);
-		}
-	}
+                } finally {
+                        JDBCUtils.close(connection);
+                }
+        }
+
+        @Override
+        public Results<VehicleDTO> findBy(VehicleCriteria criteria, int page, int pageSize) throws RentexpresException {
+                if (criteria == null) {
+                        criteria = new VehicleCriteria();
+                }
+                int safePage = page <= 0 ? 1 : page;
+                int safePageSize = pageSize <= 0 ? 20 : pageSize;
+                criteria.setPageNumber(Integer.valueOf(safePage));
+                criteria.setPageSize(Integer.valueOf(safePageSize));
+                criteria.normalize();
+                return findByCriteria(criteria);
+        }
 
 }
