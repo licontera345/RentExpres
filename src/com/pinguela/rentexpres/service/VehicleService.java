@@ -22,6 +22,20 @@ public interface VehicleService {
 
 	boolean delete(Integer id) throws RentexpresException;
 
-	Results<VehicleDTO> findByCriteria(VehicleCriteria criteria) throws RentexpresException;
+        Results<VehicleDTO> findByCriteria(VehicleCriteria criteria) throws RentexpresException;
+
+        /**
+         * Permite solicitar la búsqueda indicando la página y el tamaño explícitos.
+         * El criteria recibido se reutiliza (o se crea uno nuevo si llega null) y se
+         * configura con los valores indicados antes de delegar en
+         * {@link #findByCriteria(VehicleCriteria)}.
+         *
+         * @param criteria criterios de filtrado (opcional)
+         * @param page     número de página solicitado (1 en adelante)
+         * @param pageSize tamaño de página (> 0)
+         * @return resultados paginados de vehículos
+         * @throws RentexpresException si ocurre algún problema de negocio o datos
+         */
+        Results<VehicleDTO> findBy(VehicleCriteria criteria, int page, int pageSize) throws RentexpresException;
 
 }
