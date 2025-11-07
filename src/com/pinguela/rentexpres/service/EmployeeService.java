@@ -75,28 +75,15 @@ public interface EmployeeService {
 	 */
 	public List<EmployeeDTO> findAll() throws RentexpresException;
 
-        /**
-         * Busca Employees según criterios de filtrado y paginación.
-         *
-         * @param criteria {@link EmployeeCriteria} con filtros y parámetros de página.
-         * @return {@link Results}&lt;{@link EmployeeDTO}&gt; con la lista paginada y el
-         *         total.
-         * @throws RentexpresException Si ocurre un error en la capa de datos o lógica.
-         */
-        public Results<EmployeeDTO> findByCriteria(EmployeeCriteria criteria) throws RentexpresException;
-
-        /**
-         * Variante comodín para clientes que envían la página y el tamaño por
-         * separado. Se asegura de que el criteria reciba los valores normalizados
-         * antes de delegar en {@link #findByCriteria(EmployeeCriteria)}.
-         *
-         * @param criteria criterios de filtrado (se creará uno nuevo si es {@code null})
-         * @param page     número de página solicitado (1 en adelante)
-         * @param pageSize tamaño de página deseado (> 0)
-         * @return resultados paginados según los parámetros indicados
-         * @throws RentexpresException en caso de error de acceso a datos o lógica
-         */
-        Results<EmployeeDTO> findBy(EmployeeCriteria criteria, int page, int pageSize) throws RentexpresException;
+	/**
+	 * Busca Employees según criterios de filtrado y paginación.
+	 * 
+	 * @param criteria {@link EmployeeCriteria} con filtros y parámetros de página.
+	 * @return {@link Results}&lt;{@link EmployeeDTO}&gt; con la lista paginada y el
+	 *         total.
+	 * @throws RentexpresException Si ocurre un error en la capa de datos o lógica.
+	 */
+	public Results<EmployeeDTO> findByCriteria(EmployeeCriteria criteria) throws RentexpresException;
 
 	/**
 	 * Reactivates a deactivated employee by their ID.
