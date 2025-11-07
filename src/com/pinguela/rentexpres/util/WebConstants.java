@@ -19,9 +19,6 @@ public final class WebConstants {
     public static final String REQUEST_VEHICLE_FORM_IMAGES = "vehicleFormImages";
     public static final String REQUEST_VEHICLE_CATEGORIES = "vehicleCategories";
     public static final String REQUEST_HEADQUARTERS = "headquarters";
-    public static final String REQUEST_ROLES = "roles";
-    public static final String REQUEST_EMPLOYEES = "employees";
-    public static final String REQUEST_EMPLOYEE_CRITERIA = "employeeCriteria";
     public static final String REQUEST_RESERVATION = "reservation";
     public static final String REQUEST_RESERVATION_FORM = "reservationForm";
     public static final String REQUEST_RESERVATION_SUMMARY = "reservationSummary";
@@ -44,7 +41,6 @@ public final class WebConstants {
 
     public static final String URL_LOGIN = "/login";
     public static final String URL_PRIVATE_VEHICLE_LIST = "/private/vehicles";
-    public static final String URL_PRIVATE_EMPLOYEE_LIST = "/private/employees";
     public static final String URL_PRIVATE_RESERVATION_START = "/private/reservations/start";
     public static final String URL_PRIVATE_RESERVATION_FORM = "/private/reservations/new";
     public static final String URL_PRIVATE_RESERVATION_CONFIRM = "/private/reservations/confirm";
@@ -53,7 +49,6 @@ public final class WebConstants {
 
     public static final String VIEW_PRIVATE_VEHICLE_DETAIL = "/private/vehicle/vehicle-detail.jsp";
     public static final String VIEW_PRIVATE_VEHICLE_MANAGEMENT = "/private/vehicle/vehicle-management.jsp";
-    public static final String VIEW_PRIVATE_EMPLOYEE_MANAGEMENT = "/private/employee/employee-management.jsp";
     public static final String VIEW_PRIVATE_RESERVATION_START = "/private/reservation/reservation-start.jsp";
     public static final String VIEW_PUBLIC_RESERVATION_FORM = "/public/reservation/reservation-form.jsp";
     public static final String VIEW_PUBLIC_RESERVATION_SUMMARY = "/public/reservation/reservation-summary.jsp";
