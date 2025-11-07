@@ -193,20 +193,27 @@ public class PrivateVehicleSaveServlet extends BasePrivateServlet {
         VehicleCriteria criteria = new VehicleCriteria();
         criteria.setPageNumber(Integer.valueOf(1));
         criteria.setPageSize(Integer.valueOf(10));
+        Results<VehicleDTO> results;
         try {
-            Results<VehicleDTO> results = vehicleManagementService.loadVehicleSnapshot();
-            request.setAttribute(WebConstants.REQUEST_VEHICLE_RESULTS, results);
+            results = vehicleManagementService.loadVehicleSnapshot();
         } catch (RentexpresException e) {
             logger.warn("Error loading vehicle list snapshot", e);
-            Results<VehicleDTO> fallback = new Results<VehicleDTO>();
-            fallback.setItems(Collections.<VehicleDTO>emptyList());
-            fallback.setPage(1);
-            fallback.setPageSize(10);
-            fallback.setTotal(0);
-            fallback.normalize();
-            request.setAttribute(WebConstants.REQUEST_VEHICLE_RESULTS, fallback);
+            results = new Results<VehicleDTO>();
+            results.setItems(Collections.<VehicleDTO>emptyList());
+            results.setPage(1);
+            results.setPageSize(10);
+            results.setTotal(0);
         }
-        request.setAttribute(WebConstants.REQUEST_VEHICLE_CRITERIA, criteria);
+        results.normalize();
+        request.setAttribute("vehicles", results.getItems());
+        request.setAttribute("total", Integer.valueOf(results.getTotal()));
+        request.setAttribute("totalPages", Integer.valueOf(results.getTotalPages()));
+        request.setAttribute("currentPage", Integer.valueOf(results.getPage()));
+        request.setAttribute("hasPrev", Boolean.valueOf(results.isHasPrev()));
+        request.setAttribute("hasNext", Boolean.valueOf(results.isHasNext()));
+        request.setAttribute("fromRow", Integer.valueOf(results.getFromRow()));
+        request.setAttribute("toRow", Integer.valueOf(results.getToRow()));
+        request.setAttribute("criteria", criteria);
     }
 
     private void populateReferenceData(HttpServletRequest request, HttpSession session) throws ServletException {
@@ -216,9 +223,7 @@ public class PrivateVehicleSaveServlet extends BasePrivateServlet {
             request.setAttribute("vehicleStatuses", referenceData.getVehicleStatuses());
             request.setAttribute("vehicleCategories", referenceData.getVehicleCategories());
             request.setAttribute("headquarters", referenceData.getHeadquarters());
-            request.setAttribute("vehicleStatusMap", referenceData.getVehicleStatusMap());
-            request.setAttribute("vehicleCategoryMap", referenceData.getVehicleCategoryMap());
-            request.setAttribute(WebConstants.REQUEST_PAGE_SIZES, referenceData.getPageSizes());
+            request.setAttribute("pageSizes", referenceData.getPageSizes());
         } catch (RentexpresException e) {
             logger.error("Error loading reference data for vehicle form", e);
             throw new ServletException("Unable to load vehicle reference data", e);
