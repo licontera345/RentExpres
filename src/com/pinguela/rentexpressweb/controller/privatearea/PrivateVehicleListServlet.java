@@ -50,7 +50,7 @@ public class PrivateVehicleListServlet extends BasePrivateServlet {
         VehicleCriteria criteria = buildCriteria(request);
         Results<VehicleDTO> results;
         try {
-            results = vehicleService.findByCriteria(criteria);
+            results = vehicleService.findBy(criteria, criteria.getSafePage(), criteria.getSafePageSize());
         } catch (RentexpresException e) {
             logger.error("Error retrieving vehicle list", e);
             throw new ServletException("Unable to retrieve vehicles", e);

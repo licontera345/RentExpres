@@ -227,11 +227,11 @@ public class EmployeeServiceImpl implements EmployeeService {
 		return activated;
 	}
 
-	@Override
-	public Results<EmployeeDTO> findByCriteria(EmployeeCriteria criteria) throws RentexpresException {
-		Connection connection = null;
-		Results<EmployeeDTO> results = null;
-		try {
+        @Override
+        public Results<EmployeeDTO> findByCriteria(EmployeeCriteria criteria) throws RentexpresException {
+                Connection connection = null;
+                Results<EmployeeDTO> results = null;
+                try {
 			connection = JDBCUtils.getConnection();
 			JDBCUtils.beginTransaction(connection);
 
@@ -251,7 +251,20 @@ public class EmployeeServiceImpl implements EmployeeService {
 			throw new RentexpresException("Error in findByCriteria for Employee", e);
 		} finally {
 			JDBCUtils.close(connection);
-		}
-		return results;
-	}
+                }
+                return results;
+        }
+
+        @Override
+        public Results<EmployeeDTO> findBy(EmployeeCriteria criteria, int page, int pageSize) throws RentexpresException {
+                if (criteria == null) {
+                        criteria = new EmployeeCriteria();
+                }
+                int safePage = page <= 0 ? 1 : page;
+                int safePageSize = pageSize <= 0 ? 20 : pageSize;
+                criteria.setPageNumber(Integer.valueOf(safePage));
+                criteria.setPageSize(Integer.valueOf(safePageSize));
+                criteria.normalize();
+                return findByCriteria(criteria);
+        }
 }
