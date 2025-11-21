@@ -77,7 +77,8 @@ public class FileServiceImpl implements FileService {
         File folder = new File(getRequired(BASE_DIR_IMAGES_VEHICLE) + "/" + vehicleId);
         ensureDirectory(folder);
 
-        File target = new File(folder, imageName);
+        String sequentialName = getNextSequentialName(folder, imageName);
+        File target = new File(folder, sequentialName);
         try {
             Files.write(target.toPath(), data);
         } catch (IOException e) {
@@ -200,6 +201,38 @@ public class FileServiceImpl implements FileService {
         if (!folder.isDirectory()) {
             throw new RentexpresException("Path is not a directory: " + folder.getAbsolutePath());
         }
+    }
+
+    private String getNextSequentialName(File folder, String originalName) {
+        String extension = "";
+        int dotIndex = originalName.lastIndexOf('.');
+        if (dotIndex >= 0) {
+            extension = originalName.substring(dotIndex);
+        }
+
+        int maxNumber = 0;
+        File[] files = folder.listFiles((dir, name) -> isImageName(name));
+        if (files != null) {
+            for (File file : files) {
+                String name = file.getName();
+                int dot = name.lastIndexOf('.');
+                if (dot <= 0) {
+                    continue;
+                }
+
+                String numericPart = name.substring(0, dot);
+                try {
+                    int number = Integer.parseInt(numericPart);
+                    if (number > maxNumber) {
+                        maxNumber = number;
+                    }
+                } catch (NumberFormatException e) {
+                    // ignore non-numeric names
+                }
+            }
+        }
+
+        return (maxNumber + 1) + extension;
     }
 
     private boolean isImageName(String name) {
